@@ -6,9 +6,15 @@ import { loadEnv, defineConfig } from "@medusajs/framework/utils";
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
+// Medusa Cloud injects and manages its own database connection. Retain the
+// local DATABASE_URL configuration, but do not override Cloud's managed setup.
+const databaseConfig = process.env.MEDUSA_CLOUD_ENVIRONMENT_HANDLE
+  ? {}
+  : { databaseUrl: process.env.DATABASE_URL };
+
 module.exports = defineConfig({
   projectConfig: {
-    databaseUrl: process.env.DATABASE_URL,
+    ...databaseConfig,
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
