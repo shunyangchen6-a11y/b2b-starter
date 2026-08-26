@@ -9,7 +9,15 @@ export const wholesaleValue = (metadata: WholesaleMetadata, key: string, fallbac
 
 export const wholesaleStockStatus = (product: HttpTypes.StoreProduct) => {
   const configured = wholesaleValue(product.metadata, "stock_status", "")
-  if (configured) return configured
+  if (configured) {
+    return (
+      {
+        in_stock: "In Stock",
+        low_stock: "Low Stock",
+        sold_out: "Sold Out",
+      }[configured] || configured
+    )
+  }
   const quantity = product.variants?.reduce((total, variant) => total + (variant.inventory_quantity || 0), 0) || 0
   return quantity === 0 ? "Sold Out" : quantity <= 50 ? "Low Stock" : "In Stock"
 }

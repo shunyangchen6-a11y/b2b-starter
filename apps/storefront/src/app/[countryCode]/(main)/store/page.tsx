@@ -1,7 +1,9 @@
 import { listCategories } from "@/lib/data/categories"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { listGlobalProductOptions } from "@/lib/data/product-options"
+import { listProducts } from "@/lib/data/products"
 import { parseOptionValueIds } from "@/lib/util/option-value-query"
+import { parseWholesaleFilters } from "@/lib/util/wholesale-filters"
 import SkeletonProductGrid from "@/modules/skeletons/templates/skeleton-product-grid"
 import RefinementList from "@/modules/store/components/refinement-list"
 import { SortOptions } from "@/modules/store/components/refinement-list/sort-products"
@@ -22,6 +24,11 @@ type Params = {
     sortBy?: SortOptions
     page?: string
     optionValueIds?: string | string[]
+    category?: string | string[]
+    size?: string | string[]
+    color?: string | string[]
+    fabric?: string | string[]
+    stock_status?: string | string[]
   }>
   params: Promise<{
     countryCode: string
@@ -36,11 +43,17 @@ export default async function StorePage(props: Params) {
   const sort = sortBy || "created_at"
   const pageNumber = page ? parseInt(page) : 1
   const optionValueIds = parseOptionValueIds(searchParams)
+  const wholesaleFilters = parseWholesaleFilters(searchParams)
 
-  const [categories, customer, productOptions] = await Promise.all([
+  const [categories, customer, productOptions, availableProducts] = await Promise.all([
     listCategories(),
     retrieveCustomer(),
     listGlobalProductOptions(),
+    listProducts({
+      pageParam: 1,
+      queryParams: { limit: 100 },
+      countryCode: params.countryCode,
+    }).then(({ response }) => response.products),
   ])
 
   return (
@@ -55,6 +68,8 @@ export default async function StorePage(props: Params) {
             sortBy={sort}
             categories={categories}
             productOptions={productOptions}
+            products={availableProducts}
+            selectedFilters={wholesaleFilters}
           />
           <div className="w-full">
             <Suspense fallback={<SkeletonProductGrid />}>
@@ -64,6 +79,7 @@ export default async function StorePage(props: Params) {
                 countryCode={params.countryCode}
                 customer={customer}
                 optionValueIds={optionValueIds}
+                wholesaleFilters={wholesaleFilters}
               />
             </Suspense>
           </div>

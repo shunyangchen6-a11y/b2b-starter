@@ -9,6 +9,8 @@ import SearchInResults from "./search-in-results"
 import { HttpTypes } from "@medusajs/types"
 import CategoryList from "./category-list"
 import OptionsPicker from "./options-picker"
+import WholesaleFilters from "./wholesale-filters"
+import type { WholesaleFilters as WholesaleFilterState } from "@/lib/util/wholesale-filters"
 
 type RefinementListProps = {
   sortBy: SortOptions
@@ -18,6 +20,8 @@ type RefinementListProps = {
   currentCategory?: HttpTypes.StoreProductCategory
   productOptions?: HttpTypes.StoreProductOption[]
   hideOptionsPicker?: boolean
+  products?: HttpTypes.StoreProduct[]
+  selectedFilters?: WholesaleFilterState
 }
 
 const RefinementList = ({
@@ -28,6 +32,8 @@ const RefinementList = ({
   currentCategory,
   productOptions,
   hideOptionsPicker,
+  products,
+  selectedFilters,
 }: RefinementListProps) => {
   const router = useRouter()
   const pathname = usePathname()
@@ -65,14 +71,20 @@ const RefinementList = ({
           data-testid={dataTestId}
         />
       </Container>
-      {categories && (
-        <CategoryList
-          categories={categories}
-          currentCategory={currentCategory}
-        />
-      )}
-      {!hideOptionsPicker && productOptions && productOptions.length > 0 && (
-        <OptionsPicker options={productOptions} />
+      {products && selectedFilters ? (
+        <WholesaleFilters products={products} selectedFilters={selectedFilters} />
+      ) : (
+        <>
+          {categories && (
+            <CategoryList
+              categories={categories}
+              currentCategory={currentCategory}
+            />
+          )}
+          {!hideOptionsPicker && productOptions && productOptions.length > 0 && (
+            <OptionsPicker options={productOptions} />
+          )}
+        </>
       )}
     </div>
   )
