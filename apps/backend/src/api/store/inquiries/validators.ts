@@ -3,6 +3,8 @@ import { z } from "@medusajs/framework/zod"
 export const CreateInquiry = z.object({
   contact_name: z.string().max(120).optional(),
   whatsapp: z.string().max(40).optional(),
+  country: z.string().max(120).optional(),
+  message: z.string().max(2000).optional(),
   page_url: z.string().url().max(2048),
   total_styles: z.number().int().positive(),
   total_pieces: z.number().int().positive(),
