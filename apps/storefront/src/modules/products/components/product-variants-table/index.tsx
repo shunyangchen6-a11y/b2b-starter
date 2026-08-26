@@ -1,74 +1,49 @@
-import { addToCartEventBus } from "@/lib/data/cart-event-bus"
-import { getProductPrice } from "@/lib/util/get-product-price"
-import { HttpTypes, StoreProduct, StoreProductVariant } from "@medusajs/types"
+import { useSelection } from "@/lib/selection/selection-context"
+import { productStyleNumber, wholesaleValue } from "@/lib/util/wholesale"
+import { HttpTypes } from "@medusajs/types"
 import { clx, Table } from "@medusajs/ui"
 import Button from "@/modules/common/components/button"
-import ShoppingBag from "@/modules/common/icons/shopping-bag"
 import { useState } from "react"
 import BulkTableQuantity from "../bulk-table-quantity"
 
 const ProductVariantsTable = ({
   product,
-  region,
+  region: _region,
 }: {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion
 }) => {
-  const [isAdding, setIsAdding] = useState(false)
-  const [lineItemsMap, setLineItemsMap] = useState<
-    Map<
-      string,
-      StoreProductVariant & {
-        product: StoreProduct
-        quantity: number
-      }
-    >
-  >(new Map())
+  const { addItem } = useSelection()
+  const [quantities, setQuantities] = useState<Map<string, number>>(new Map())
 
-  const totalQuantity = Array.from(lineItemsMap.values()).reduce(
-    (acc, curr) => acc + curr.quantity,
-    0
-  )
+  const totalQuantity = Array.from(quantities.values()).reduce((acc, current) => acc + current, 0)
 
   const handleQuantityChange = (variantId: string, quantity: number) => {
-    setLineItemsMap((prev) => {
-      const newLineItems = new Map(prev)
-
-      if (!prev.get(variantId)) {
-        newLineItems.set(variantId, {
-          ...product.variants?.find((v) => v.id === variantId)!,
-          product,
-          quantity,
-        })
-      } else {
-        newLineItems.set(variantId, {
-          ...prev.get(variantId)!,
-          quantity,
-        })
-      }
-
-      return newLineItems
+    setQuantities((prev) => {
+      const next = new Map(prev)
+      quantity > 0 ? next.set(variantId, quantity) : next.delete(variantId)
+      return next
     })
   }
 
-  const handleAddToCart = async () => {
-    setIsAdding(true)
-
-    const lineItems = Array.from(lineItemsMap.entries()).map(
-      ([variantId, { quantity, ...variant }]) => ({
-        productVariant: {
-          ...variant,
-        },
+  const handleAddToSelection = () => {
+    quantities.forEach((quantity, variantId) => {
+      const variant = product.variants?.find((entry) => entry.id === variantId)
+      if (!variant || !quantity) return
+      const options = Object.fromEntries((variant.options || []).map((option) => [option.option_id || option.id || "option", option.value || ""]))
+      addItem({
+        id: variant.id,
+        handle: product.handle || product.id,
+        title: product.title,
+        styleNumber: productStyleNumber(product),
+        color: Object.values(options)[0] || wholesaleValue(product.metadata, "color", "Mixed"),
+        size: Object.values(options)[1] || Object.values(options)[0] || "Mixed",
         quantity,
+        packSize: wholesaleValue(product.metadata, "pack_size", "5") === "10" ? 10 : 5,
+        image: product.thumbnail || undefined,
       })
-    )
-
-    addToCartEventBus.emitCartAdd({
-      lineItems,
-      regionId: region.id,
     })
-
-    setIsAdding(false)
+    setQuantities(new Map())
   }
 
   return (
@@ -88,19 +63,12 @@ const ProductVariantsTable = ({
                   </Table.HeaderCell>
                 )
               })}
-              <Table.HeaderCell className="px-4 border-x">
-                Price
-              </Table.HeaderCell>
-              <Table.HeaderCell className="px-4">Quantity</Table.HeaderCell>
+              <Table.HeaderCell className="px-4 border-x">Wholesale price</Table.HeaderCell>
+              <Table.HeaderCell className="px-4">Pieces</Table.HeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body className="border-none">
             {product.variants?.map((variant, index) => {
-              const { variantPrice } = getProductPrice({
-                product,
-                variantId: variant.id,
-              })
-
               return (
                 <Table.Row
                   key={variant.id}
@@ -119,9 +87,7 @@ const ProductVariantsTable = ({
                       </Table.Cell>
                     )
                   })}
-                  <Table.Cell className="px-4 border-x">
-                    {variantPrice?.calculated_price}
-                  </Table.Cell>
+                  <Table.Cell className="px-4 border-x text-xs text-zinc-500">Contact for Wholesale Price</Table.Cell>
                   <Table.Cell className="pl-1 !pr-1">
                     <BulkTableQuantity
                       variantId={variant.id}
@@ -135,20 +101,15 @@ const ProductVariantsTable = ({
         </Table>
       </div>
       <Button
-        onClick={handleAddToCart}
+        onClick={handleAddToSelection}
         variant="primary"
         className="w-full h-10"
-        isLoading={isAdding}
         disabled={totalQuantity === 0}
         data-testid="add-product-button"
       >
-        <ShoppingBag
-          className="text-white"
-          fill={totalQuantity === 0 ? "none" : "#fff"}
-        />
         {totalQuantity === 0
           ? "Choose product variant(s) above"
-          : "Add to cart"}
+          : "Add to Selection List"}
       </Button>
     </div>
   )
