@@ -45,6 +45,7 @@ yarn-error.log*
 
 # Local tool caches
 .cache
+.cache*/
 .pnpm-store
 
 # vercel
