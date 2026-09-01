@@ -30,6 +30,8 @@ const item = (id, quantity) => ({
   handle: "classic-jogger-pants",
   title: "Classic Jogger Pants",
   styleNumber: "FSC-JOG-001",
+  variantId: id,
+  sku: `FSC-JOG-001-${id.toUpperCase()}`,
   color: "Black",
   size: id.split("-").at(-1),
   quantity,
@@ -78,6 +80,20 @@ test("sanitizes invalid quantities and stale localStorage entries", () => {
   )
   assert.equal(selectionTotals(restored).pieces, 36)
   assert.deepEqual(parseStoredSelection("not-json"), [])
+})
+
+test("never turns a stale product style number into a variant SKU", () => {
+  const restored = parseStoredSelection(JSON.stringify([{
+    id: "variant_stale",
+    handle: "classic-jogger-pants",
+    title: "Classic Jogger Pants",
+    styleNumber: "FSC-JOG-001",
+    quantity: 2,
+    packSize: 5,
+  }]))
+
+  assert.equal(restored[0].variantId, "variant_stale")
+  assert.equal(restored[0].sku, "")
 })
 
 test("keeps normalized totals after a localStorage refresh", () => {

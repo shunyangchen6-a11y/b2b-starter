@@ -20,6 +20,10 @@ export default function SelectionDrawer() {
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false)
   const [inquiryError, setInquiryError] = useState<string | null>(null)
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false)
+  const [contactName, setContactName] = useState("")
+  const [customerWhatsapp, setCustomerWhatsapp] = useState("")
+  const [country, setCountry] = useState("")
+  const [message, setMessage] = useState("")
   const pathname = usePathname()
   const totals = selectionTotals(items)
   const whatsapp = createWhatsAppLink(
@@ -33,11 +37,25 @@ export default function SelectionDrawer() {
   const sendInquiry = async () => {
     if (!whatsapp || !items.length) return
 
+    if (items.some((item) => !item.sku)) {
+      setInquiryError("One or more selected variants are missing a SKU. Remove and add them again before sending your inquiry.")
+      return
+    }
+
+    if (!contactName.trim() || !country.trim() || customerWhatsapp.replace(/\D/g, "").length < 6) {
+      setInquiryError("Enter your name, WhatsApp number, and country before sending your inquiry.")
+      return
+    }
+
     const backendUrl =
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
     const payload = createStoreInquiryPayload({
       items,
       pageUrl: window.location.href,
+      contactName,
+      whatsapp: customerWhatsapp,
+      country,
+      message: message.trim() || undefined,
     })
 
     setInquiryError(null)
@@ -157,6 +175,56 @@ export default function SelectionDrawer() {
               <div className="mb-4 flex justify-between text-sm">
                 <span>{totals.styles} style(s)</span>
                 <span>{totals.pieces} piece(s)</span>
+              </div>
+              <div className="mb-4 grid gap-3 text-sm">
+                <p className="font-semibold text-zinc-950">Your inquiry details</p>
+                <label className="grid gap-1">
+                  <span className="text-xs text-zinc-600">Customer Name *</span>
+                  <input
+                    aria-label="Customer Name"
+                    autoComplete="name"
+                    className="border border-zinc-300 px-3 py-2"
+                    maxLength={120}
+                    onChange={(event) => setContactName(event.target.value)}
+                    required
+                    value={contactName}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs text-zinc-600">WhatsApp Number *</span>
+                  <input
+                    aria-label="WhatsApp Number"
+                    autoComplete="tel"
+                    className="border border-zinc-300 px-3 py-2"
+                    inputMode="tel"
+                    maxLength={40}
+                    onChange={(event) => setCustomerWhatsapp(event.target.value)}
+                    required
+                    value={customerWhatsapp}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs text-zinc-600">Country *</span>
+                  <input
+                    aria-label="Country"
+                    autoComplete="country-name"
+                    className="border border-zinc-300 px-3 py-2"
+                    maxLength={120}
+                    onChange={(event) => setCountry(event.target.value)}
+                    required
+                    value={country}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs text-zinc-600">Message (optional)</span>
+                  <textarea
+                    aria-label="Message"
+                    className="min-h-20 border border-zinc-300 px-3 py-2"
+                    maxLength={2000}
+                    onChange={(event) => setMessage(event.target.value)}
+                    value={message}
+                  />
+                </label>
               </div>
               {!process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
                 <p className="mb-3 text-xs text-amber-700">

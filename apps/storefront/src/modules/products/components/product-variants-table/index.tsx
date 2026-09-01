@@ -45,6 +45,8 @@ const ProductVariantsTable = ({
         handle: product.handle || product.id,
         title: product.title,
         styleNumber: productStyleNumber(product),
+        variantId: variant.id,
+        sku: variant.sku || "",
         color: Object.values(options)[0] || wholesaleValue(product.metadata, "color", "Mixed"),
         size: Object.values(options)[1] || Object.values(options)[0] || "Mixed",
         quantity: normalizedQuantity,

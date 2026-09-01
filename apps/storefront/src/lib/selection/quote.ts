@@ -3,6 +3,8 @@ export type SelectionItem = {
   handle: string
   title: string
   styleNumber: string
+  variantId: string
+  sku: string
   color: string
   size: string
   quantity: number
@@ -12,7 +14,14 @@ export type SelectionItem = {
 
 export type StoreInquiryItem = Pick<
   SelectionItem,
-  "title" | "styleNumber" | "color" | "size" | "quantity" | "packSize"
+  | "title"
+  | "styleNumber"
+  | "variantId"
+  | "sku"
+  | "color"
+  | "size"
+  | "quantity"
+  | "packSize"
 >
 
 export type StoreInquiryPayload = {
@@ -20,9 +29,9 @@ export type StoreInquiryPayload = {
   total_styles: number
   total_pieces: number
   items: StoreInquiryItem[]
-  contact_name?: string
-  whatsapp?: string
-  country?: string
+  contact_name: string
+  whatsapp: string
+  country: string
   message?: string
 }
 
@@ -62,6 +71,8 @@ export const normalizeSelectionItem = (
     handle: stringValue(item.handle),
     title: stringValue(item.title),
     styleNumber: stringValue(item.styleNumber),
+    variantId: stringValue(item.variantId) || id,
+    sku: stringValue(item.sku),
     color: stringValue(item.color),
     size: stringValue(item.size),
     quantity,
@@ -160,9 +171,9 @@ export const createStoreInquiryPayload = ({
 }: {
   items: SelectionItem[]
   pageUrl: string
-  contactName?: string
-  whatsapp?: string
-  country?: string
+  contactName: string
+  whatsapp: string
+  country: string
   message?: string
 }): StoreInquiryPayload => {
   const normalizedItems = normalizeSelectionItems(items)
@@ -171,9 +182,14 @@ export const createStoreInquiryPayload = ({
     page_url: pageUrl,
     total_styles: totals.styles,
     total_pieces: totals.pieces,
-    items: normalizedItems.map(({ title, styleNumber, color, size, quantity, packSize }) => ({
+    contact_name: contactName.trim(),
+    whatsapp: whatsapp.trim(),
+    country: country.trim(),
+    items: normalizedItems.map(({ title, styleNumber, variantId, sku, color, size, quantity, packSize }) => ({
       title,
       styleNumber,
+      variantId,
+      sku,
       color,
       size,
       quantity,
@@ -181,9 +197,6 @@ export const createStoreInquiryPayload = ({
     })),
   }
 
-  if (contactName) payload.contact_name = contactName
-  if (whatsapp) payload.whatsapp = whatsapp
-  if (country) payload.country = country
   if (message) payload.message = message
 
   return payload
