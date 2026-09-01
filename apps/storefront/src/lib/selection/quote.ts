@@ -109,6 +109,14 @@ export const mergeSelectionItem = (
   )
 }
 
+export type ClearSelectionAction = "confirm" | "cancel" | "dismiss"
+
+export const applySelectionClearAction = (
+  items: SelectionItem[],
+  action: ClearSelectionAction
+): SelectionItem[] =>
+  action === "confirm" ? [] : normalizeSelectionItems(items)
+
 export const selectionTotals = (items: SelectionItem[]) => {
   const normalizedItems = normalizeSelectionItems(items)
 

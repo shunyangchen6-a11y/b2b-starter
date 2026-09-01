@@ -18,6 +18,7 @@ require.extensions[".ts"] = (module, filename) => {
 }
 
 const {
+  applySelectionClearAction,
   mergeSelectionItem,
   normalizeQuantity,
   parseStoredSelection,
@@ -90,4 +91,28 @@ test("keeps normalized totals after a localStorage refresh", () => {
   const refreshed = parseStoredSelection(JSON.stringify(initial))
 
   assert.equal(selectionTotals(refreshed).pieces, 36)
+})
+
+test("cancelling the clear confirmation keeps all selected products", () => {
+  const current = [item("sku-black-s", 2), item("sku-black-m", 3)]
+  const cancelled = applySelectionClearAction(current, "cancel")
+
+  assert.equal(selectionTotals(cancelled).pieces, 5)
+})
+
+test("overlay, close button, and Escape dismissal keep the selection", () => {
+  const current = [item("sku-black-s", 2), item("sku-black-m", 3)]
+  const dismissed = applySelectionClearAction(current, "dismiss")
+
+  assert.equal(selectionTotals(dismissed).pieces, 5)
+})
+
+test("only explicit confirmation clears the selection and resets the counter", () => {
+  const cleared = applySelectionClearAction(
+    [item("sku-black-s", 2), item("sku-black-m", 3)],
+    "confirm"
+  )
+
+  assert.deepEqual(cleared, [])
+  assert.equal(selectionTotals(cleared).pieces, 0)
 })

@@ -1,6 +1,8 @@
 "use client"
 
 import {
+  applySelectionClearAction,
+  ClearSelectionAction,
   mergeSelectionItem,
   normalizeQuantity,
   parseStoredSelection,
@@ -15,7 +17,7 @@ type SelectionContextValue = {
   addItem: (item: SelectionItem) => void
   updateQuantity: (id: string, quantity: number) => void
   removeItem: (id: string) => void
-  clear: () => void
+  clear: (action: ClearSelectionAction) => void
 }
 
 const SelectionContext = createContext<SelectionContextValue | null>(null)
@@ -62,7 +64,8 @@ export function SelectionProvider({ children }: PropsWithChildren) {
       )
     },
     removeItem: (id) => setItems((current) => current.filter((item) => item.id !== id)),
-    clear: () => setItems([]),
+    clear: (action) =>
+      setItems((current) => applySelectionClearAction(current, action)),
   }), [items])
 
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>
