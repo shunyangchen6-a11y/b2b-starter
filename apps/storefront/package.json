@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev -p 8000",
     "build": "next build",
-    "test": "node --test test/middleware.test.cjs test/selection-quantity.test.cjs test/product-image.test.cjs",
+    "test": "node --test test/middleware.test.cjs test/selection-quantity.test.cjs test/product-image.test.cjs test/inquiry-submission.test.cjs",
     "start": "next start -p 8000",
     "lint": "next lint",
     "clean": "rm -rf .next node_modules",

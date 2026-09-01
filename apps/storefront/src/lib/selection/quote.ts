@@ -10,6 +10,22 @@ export type SelectionItem = {
   image?: string
 }
 
+export type StoreInquiryItem = Pick<
+  SelectionItem,
+  "title" | "styleNumber" | "color" | "size" | "quantity" | "packSize"
+>
+
+export type StoreInquiryPayload = {
+  page_url: string
+  total_styles: number
+  total_pieces: number
+  items: StoreInquiryItem[]
+  contact_name?: string
+  whatsapp?: string
+  country?: string
+  message?: string
+}
+
 type SelectionItemInput = Partial<SelectionItem> & Record<string, unknown>
 
 export const normalizeQuantity = (value: unknown) => {
@@ -132,6 +148,45 @@ export const selectionTotals = (items: SelectionItem[]) => {
       0
     ),
   }
+}
+
+export const createStoreInquiryPayload = ({
+  items,
+  pageUrl,
+  contactName,
+  whatsapp,
+  country,
+  message,
+}: {
+  items: SelectionItem[]
+  pageUrl: string
+  contactName?: string
+  whatsapp?: string
+  country?: string
+  message?: string
+}): StoreInquiryPayload => {
+  const normalizedItems = normalizeSelectionItems(items)
+  const totals = selectionTotals(normalizedItems)
+  const payload: StoreInquiryPayload = {
+    page_url: pageUrl,
+    total_styles: totals.styles,
+    total_pieces: totals.pieces,
+    items: normalizedItems.map(({ title, styleNumber, color, size, quantity, packSize }) => ({
+      title,
+      styleNumber,
+      color,
+      size,
+      quantity,
+      packSize,
+    })),
+  }
+
+  if (contactName) payload.contact_name = contactName
+  if (whatsapp) payload.whatsapp = whatsapp
+  if (country) payload.country = country
+  if (message) payload.message = message
+
+  return payload
 }
 
 export const createWhatsAppMessage = ({

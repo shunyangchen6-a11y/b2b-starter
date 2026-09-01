@@ -3,9 +3,11 @@
 import {
   createWhatsAppLink,
   createWhatsAppMessage,
+  createStoreInquiryPayload,
   selectionTotals,
 } from "@/lib/selection/quote"
 import { useSelection } from "@/lib/selection/selection-context"
+import { submitInquiryAndOpenWhatsApp } from "@/lib/selection/submit-inquiry"
 import Thumbnail from "@/modules/products/components/thumbnail"
 import { Trash, XMark } from "@medusajs/icons"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -16,6 +18,8 @@ export default function SelectionDrawer() {
   const { items, updateQuantity, removeItem, clear } = useSelection()
   const [open, setOpen] = useState(false)
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false)
+  const [inquiryError, setInquiryError] = useState<string | null>(null)
+  const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false)
   const pathname = usePathname()
   const totals = selectionTotals(items)
   const whatsapp = createWhatsAppLink(
@@ -26,23 +30,37 @@ export default function SelectionDrawer() {
     })
   )
 
-  const sendInquiry = () => {
+  const sendInquiry = async () => {
     if (!whatsapp || !items.length) return
 
     const backendUrl =
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
-
-    void fetch(`${backendUrl}/store/inquiries`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        page_url: window.location.href,
-        total_styles: totals.styles,
-        total_pieces: totals.pieces,
-        items,
-      }),
+    const payload = createStoreInquiryPayload({
+      items,
+      pageUrl: window.location.href,
     })
-    window.open(whatsapp, "_blank", "noopener,noreferrer")
+
+    setInquiryError(null)
+    setIsSubmittingInquiry(true)
+
+    try {
+      await submitInquiryAndOpenWhatsApp({
+        backendUrl,
+        payload,
+        publishableApiKey:
+          process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || undefined,
+        whatsappUrl: whatsapp,
+        openWhatsApp: (url) => window.open(url, "_blank", "noopener,noreferrer"),
+      })
+    } catch (error) {
+      setInquiryError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save your inquiry. Please try again."
+      )
+    } finally {
+      setIsSubmittingInquiry(false)
+    }
   }
 
   const confirmClear = () => {
@@ -146,16 +164,23 @@ export default function SelectionDrawer() {
                   before deployment.
                 </p>
               )}
+              {inquiryError && (
+                <p role="alert" className="mb-3 text-sm text-red-700">
+                  {inquiryError}
+                </p>
+              )}
               <button
                 className={`w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
-                  !whatsapp || !items.length
+                  !whatsapp || !items.length || isSubmittingInquiry
                     ? "cursor-not-allowed opacity-40"
                     : "hover:bg-amber-700"
                 }`}
-                onClick={sendInquiry}
-                disabled={!whatsapp || !items.length}
+                onClick={() => void sendInquiry()}
+                disabled={!whatsapp || !items.length || isSubmittingInquiry}
               >
-                Send Inquiry on WhatsApp
+                {isSubmittingInquiry
+                  ? "Saving inquiry..."
+                  : "Send Inquiry on WhatsApp"}
               </button>
               <button
                 onClick={() => setClearConfirmationOpen(true)}
