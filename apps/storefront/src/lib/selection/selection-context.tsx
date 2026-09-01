@@ -1,6 +1,11 @@
 "use client"
 
-import { SelectionItem } from "./quote"
+import {
+  mergeSelectionItem,
+  normalizeQuantity,
+  parseStoredSelection,
+  SelectionItem,
+} from "./quote"
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from "react"
 
 const STORAGE_KEY = "four-seasons-selection-list"
@@ -17,26 +22,45 @@ const SelectionContext = createContext<SelectionContextValue | null>(null)
 
 export function SelectionProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<SelectionItem[]>([])
+  const [hasHydrated, setHasHydrated] = useState(false)
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (!stored) return
-    try { setItems(JSON.parse(stored)) } catch { window.localStorage.removeItem(STORAGE_KEY) }
+    const restoredItems = parseStoredSelection(stored)
+
+    if (stored && restoredItems.length === 0) {
+      window.localStorage.removeItem(STORAGE_KEY)
+    }
+
+    setItems(restoredItems)
+    setHasHydrated(true)
   }, [])
 
   useEffect(() => {
+    if (!hasHydrated) {
+      return
+    }
+
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-  }, [items])
+  }, [hasHydrated, items])
 
   const value = useMemo<SelectionContextValue>(() => ({
     items,
-    addItem: (item) => setItems((current) => {
-      const existing = current.find((entry) => entry.id === item.id)
-      return existing
-        ? current.map((entry) => entry.id === item.id ? { ...entry, quantity: entry.quantity + item.quantity } : entry)
-        : [...current, item]
-    }),
-    updateQuantity: (id, quantity) => setItems((current) => current.map((item) => item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item)),
+    addItem: (item) =>
+      setItems((current) => mergeSelectionItem(current, item)),
+    updateQuantity: (id, quantity) => {
+      const normalizedQuantity = normalizeQuantity(quantity)
+
+      if (normalizedQuantity === 0) {
+        return
+      }
+
+      setItems((current) =>
+        current.map((item) =>
+          item.id === id ? { ...item, quantity: normalizedQuantity } : item
+        )
+      )
+    },
     removeItem: (id) => setItems((current) => current.filter((item) => item.id !== id)),
     clear: () => setItems([]),
   }), [items])

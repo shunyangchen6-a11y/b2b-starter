@@ -1,4 +1,5 @@
 import { useSelection } from "@/lib/selection/selection-context"
+import { normalizeQuantity } from "@/lib/selection/quote"
 import { productStyleNumber, wholesaleValue } from "@/lib/util/wholesale"
 import { HttpTypes } from "@medusajs/types"
 import { clx, Table } from "@medusajs/ui"
@@ -16,12 +17,19 @@ const ProductVariantsTable = ({
   const { addItem } = useSelection()
   const [quantities, setQuantities] = useState<Map<string, number>>(new Map())
 
-  const totalQuantity = Array.from(quantities.values()).reduce((acc, current) => acc + current, 0)
+  const totalQuantity = Array.from(quantities.values()).reduce(
+    (total, quantity) => total + normalizeQuantity(quantity),
+    0
+  )
 
   const handleQuantityChange = (variantId: string, quantity: number) => {
+    const normalizedQuantity = normalizeQuantity(quantity)
+
     setQuantities((prev) => {
       const next = new Map(prev)
-      quantity > 0 ? next.set(variantId, quantity) : next.delete(variantId)
+      normalizedQuantity > 0
+        ? next.set(variantId, normalizedQuantity)
+        : next.delete(variantId)
       return next
     })
   }
@@ -29,7 +37,8 @@ const ProductVariantsTable = ({
   const handleAddToSelection = () => {
     quantities.forEach((quantity, variantId) => {
       const variant = product.variants?.find((entry) => entry.id === variantId)
-      if (!variant || !quantity) return
+      const normalizedQuantity = normalizeQuantity(quantity)
+      if (!variant || normalizedQuantity === 0) return
       const options = Object.fromEntries((variant.options || []).map((option) => [option.option_id || option.id || "option", option.value || ""]))
       addItem({
         id: variant.id,
@@ -38,7 +47,7 @@ const ProductVariantsTable = ({
         styleNumber: productStyleNumber(product),
         color: Object.values(options)[0] || wholesaleValue(product.metadata, "color", "Mixed"),
         size: Object.values(options)[1] || Object.values(options)[0] || "Mixed",
-        quantity,
+        quantity: normalizedQuantity,
         packSize: wholesaleValue(product.metadata, "pack_size", "5") === "10" ? 10 : 5,
         image: product.thumbnail || undefined,
       })

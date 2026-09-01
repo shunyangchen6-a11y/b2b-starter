@@ -1,5 +1,6 @@
 import { MinusMini, PlusMini } from "@medusajs/icons"
 import { IconButton, Input } from "@medusajs/ui"
+import { normalizeQuantity } from "@/lib/selection/quote"
 import { useEffect, useState } from "react"
 
 type BulkTableQuantityProps = {
@@ -12,18 +13,22 @@ const BulkTableQuantity = ({ variantId, onChange }: BulkTableQuantityProps) => {
   const [shiftPressed, setShiftPressed] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuantity(e.target.value)
-    onChange(variantId, Number(e.target.value))
+    const normalizedQuantity = normalizeQuantity(e.target.value)
+    setQuantity(normalizedQuantity.toString())
+    onChange(variantId, normalizedQuantity)
   }
 
   const handleAdd = () => {
-    const q = Math.max(Number(quantity) + (shiftPressed ? 10 : 1), 0)
+    const q = normalizeQuantity(quantity) + (shiftPressed ? 10 : 1)
     setQuantity(q.toString())
     onChange(variantId, q)
   }
 
   const handleSubtract = () => {
-    const q = Math.max(Number(quantity) - (shiftPressed ? 10 : 1), 0)
+    const q = Math.max(
+      normalizeQuantity(quantity) - (shiftPressed ? 10 : 1),
+      0
+    )
     setQuantity(q.toString())
     onChange(variantId, q)
   }
