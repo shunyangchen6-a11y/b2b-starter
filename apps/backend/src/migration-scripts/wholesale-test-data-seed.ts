@@ -9,6 +9,7 @@ import {
   createProductCategoriesWorkflow,
   createProductsWorkflow,
   linkProductsToSalesChannelWorkflow,
+  updateProductsWorkflow,
 } from "@medusajs/medusa/core-flows"
 
 type WholesaleProductSeed = {
@@ -152,8 +153,6 @@ export default async function wholesale_test_data_seed({
   const existingHandles = new Set(
     existingProducts.map((product: { handle: string }) => product.handle)
   )
-  const baseUrl = (process.env.STOREFRONT_URL || "http://localhost:8000").replace(/\/$/, "")
-  const placeholderUrl = `${baseUrl}${PLACEHOLDER_PATH}`
   const missingProducts = products.filter((product) => !existingHandles.has(product.handle))
 
   if (missingProducts.length) {
@@ -165,8 +164,8 @@ export default async function wholesale_test_data_seed({
           description: `Neutral wholesale sample data for ${product.title}. Remove products tagged ${TEST_DATA_MARKER} when no longer needed.`,
           status: ProductStatus.PUBLISHED,
           category_ids: [categoryByHandle.get(product.category)!],
-          images: [{ url: placeholderUrl }],
-          thumbnail: placeholderUrl,
+          images: [{ url: PLACEHOLDER_PATH }],
+          thumbnail: PLACEHOLDER_PATH,
           metadata: {
             category: product.category,
             fabric: product.fabric,
@@ -193,6 +192,28 @@ export default async function wholesale_test_data_seed({
               prices: [{ amount: 1, currency_code: "usd" }],
             }))
           ),
+        })),
+      },
+    })
+  }
+
+  const { data: seededProductImages } = await query.graph({
+    entity: "product",
+    fields: ["id", "handle", "thumbnail", "images.url"],
+    filters: { handle: { $in: products.map((product) => product.handle) } },
+  })
+  const productsWithOutdatedImages = seededProductImages.filter((product: any) =>
+    product.thumbnail !== PLACEHOLDER_PATH ||
+    !product.images?.some((image: { url: string }) => image.url === PLACEHOLDER_PATH)
+  )
+
+  if (productsWithOutdatedImages.length) {
+    await updateProductsWorkflow(container).run({
+      input: {
+        products: productsWithOutdatedImages.map((product: any) => ({
+          id: product.id,
+          thumbnail: PLACEHOLDER_PATH,
+          images: [{ url: PLACEHOLDER_PATH }],
         })),
       },
     })

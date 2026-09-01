@@ -6,6 +6,7 @@ import {
   selectionTotals,
 } from "@/lib/selection/quote"
 import { useSelection } from "@/lib/selection/selection-context"
+import Thumbnail from "@/modules/products/components/thumbnail"
 import { Trash, XMark } from "@medusajs/icons"
 import * as Dialog from "@radix-ui/react-dialog"
 import { usePathname } from "next/navigation"
@@ -93,14 +94,21 @@ export default function SelectionDrawer() {
                 items.map((item) => (
                   <div key={item.id} className="border-b border-zinc-100 py-4 text-sm">
                     <div className="flex justify-between gap-3">
-                      <div>
-                        <p className="font-medium">{item.title}</p>
-                        <p className="text-xs text-zinc-500">
-                          Style {item.styleNumber} · {item.color} · {item.size}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {item.packSize}-piece pack
-                        </p>
+                      <div className="flex min-w-0 gap-3">
+                        <Thumbnail
+                          thumbnail={item.image}
+                          size="square"
+                          className="w-14 shrink-0 rounded bg-zinc-100"
+                        />
+                        <div>
+                          <p className="font-medium">{item.title}</p>
+                          <p className="text-xs text-zinc-500">
+                            Style {item.styleNumber} · {item.color} · {item.size}
+                          </p>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            {item.packSize}-piece pack
+                          </p>
+                        </div>
                       </div>
                       <button
                         aria-label="Remove item"
