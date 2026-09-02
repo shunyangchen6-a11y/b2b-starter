@@ -22,11 +22,3 @@ Use Medusa product metadata for `style_number`, `fabric`, `pack_size` (`5` or `1
 ## Admin usage
 
 Create/edit products in Medusa Admin under Products. Add product images and a video URL in metadata, create color/size variants, set inventory, and set a publishable sales channel. Wholesale inquiry records are available through the authenticated `/admin/inquiries` API while a dedicated Admin dashboard table is the next UI enhancement.
-
-## Temporary Preview FS-TEST inventory repair
-
-For a Medusa Cloud Preview whose existing `FS-TEST-` variants have zero inventory, set `MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED=true` only in that Preview environment's **Backend** variables. The server also requires Cloud's platform-provided `MEDUSA_CLOUD_ENVIRONMENT_TYPE=preview-instance`, so the action is rejected in Production and every long-lived environment. Do not configure the `MEDUSA_CLOUD_*` variables manually.
-
-After deployment, sign in to Admin and open **Wholesale CSV**. Use **Sync FS-TEST Inventory**, confirm the prompt, and verify the returned scan/sync counts. The action only updates existing `FS-TEST-` variants and sets absolute inventory levels, so it is safe to run twice.
-
-After the Preview inventory is verified, remove the temporary Admin button, its API route, `preview-fs-test-inventory-sync.ts`, its verifier, and `MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED` from the Preview environment. Keep the normal wholesale seed and CSV inventory synchronization code.
