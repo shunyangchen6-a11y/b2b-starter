@@ -84,7 +84,7 @@ export default async function PaginatedProducts({
         {count} {count === 1 ? "product" : "products"}
       </p>
       <ul
-        className="grid grid-cols-1 w-full small:grid-cols-3 medium:grid-cols-4 gap-3"
+        className="grid min-w-0 grid-cols-1 w-full gap-3 small:grid-cols-3 medium:grid-cols-4"
         data-testid="products-list"
       >
         {products.length > 0 ? (

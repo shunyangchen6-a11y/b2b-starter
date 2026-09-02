@@ -21,10 +21,10 @@ export default async function ProductPreview({
   const sizes = product.variants?.map((variant) => variant.options?.map((option) => option.value).filter(Boolean).join(" / ")).filter(Boolean).slice(0, 3)
 
   return (
-    <LocalizedClientLink href={`/products/${product.handle}`} className="group">
+    <LocalizedClientLink href={`/products/${product.handle}`} className="group min-w-0">
       <div
         data-testid="product-wrapper"
-        className="flex flex-col gap-4 relative aspect-[3/5] w-full overflow-hidden p-4 bg-white shadow-borders-base rounded-lg group-hover:shadow-[0_0_0_3px_rgba(180,132,38,0.35)] transition-shadow ease-in-out duration-150"
+        className="relative flex min-w-0 flex-col gap-4 overflow-hidden rounded-lg bg-white p-4 shadow-borders-base transition-shadow duration-150 ease-in-out group-hover:shadow-[0_0_0_3px_rgba(180,132,38,0.35)] aspect-[3/5] w-full"
       >
         <div className="w-full h-full p-10">
           <Thumbnail
@@ -34,15 +34,15 @@ export default async function ProductPreview({
             isFeatured={isFeatured}
           />
         </div>
-        <div className="flex flex-col txt-compact-medium">
+        <div className="flex min-w-0 flex-col txt-compact-medium">
           <Text className="text-amber-700 text-xs font-semibold uppercase tracking-wide">Style {productStyleNumber(product)}</Text>
-          <Text className="text-ui-fg-base" data-testid="product-title">
+          <Text className="break-words text-ui-fg-base" data-testid="product-title">
             {product.title}
           </Text>
         </div>
         <Text className="text-sm font-medium">Contact for Wholesale Price</Text>
-        <div className="flex justify-between">
-          <div className="flex flex-row gap-1 items-center">
+        <div className="flex min-w-0 justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1">
             <span
               className={clx({
                 "text-green-500": stockStatus === "In Stock",

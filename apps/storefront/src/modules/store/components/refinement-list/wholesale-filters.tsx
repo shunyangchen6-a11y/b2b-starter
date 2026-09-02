@@ -50,7 +50,7 @@ const FilterFields = ({
                   key={option.value}
                   type="button"
                   onClick={() => onToggle(key, option.value)}
-                  className={`min-h-9 rounded-full border px-3 text-xs transition-colors ${
+                  className={`min-h-11 rounded-full border px-3 text-xs transition-colors ${
                     selected
                       ? "border-neutral-900 bg-neutral-900 text-white"
                       : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-600"
@@ -178,7 +178,7 @@ export default function WholesaleFilters({
                 <p className="text-base font-semibold text-neutral-900">Filters</p>
                 <p className="text-xs text-neutral-500">{wholesaleFilterCount(draftFilters)} selected</p>
               </div>
-              <button type="button" onClick={() => setDrawerOpen(false)} className="min-h-10 px-2 text-sm text-neutral-700">Close</button>
+              <button type="button" onClick={() => setDrawerOpen(false)} className="min-h-11 px-3 text-sm text-neutral-700">Close</button>
             </div>
             <FilterFields
               filters={draftFilters}

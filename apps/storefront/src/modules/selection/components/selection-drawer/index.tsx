@@ -96,7 +96,7 @@ export default function SelectionDrawer() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="rounded-full border border-zinc-300 px-3 py-2 text-xs font-semibold uppercase tracking-wide hover:border-amber-600"
+        className="min-h-11 rounded-full border border-zinc-300 px-3 text-xs font-semibold uppercase tracking-wide hover:border-amber-600"
       >
         Selection List ({totals.pieces})
       </button>
@@ -111,22 +111,22 @@ export default function SelectionDrawer() {
           }}
         >
           <aside
-            className="ml-auto flex h-full w-full max-w-md flex-col bg-white p-5 shadow-2xl"
+            className="ml-auto flex h-full w-full max-w-md flex-col bg-white p-4 xsmall:p-5 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
-              <div>
+            <div className="flex min-w-0 items-center justify-between border-b border-zinc-200 pb-4">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
                   FOUR SEASONS CLOTHING
                 </p>
                 <h2 className="text-xl font-semibold">Selection List</h2>
               </div>
-              <button aria-label="Close" onClick={() => setOpen(false)}>
+              <button aria-label="Close" onClick={() => setOpen(false)} className="ml-3 flex min-h-11 min-w-11 shrink-0 items-center justify-center">
                 <XMark />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto py-4">
               {items.length === 0 ? (
                 <p className="text-sm text-zinc-500">
                   Your selection list is empty. Add styles and quantities to
@@ -135,19 +135,19 @@ export default function SelectionDrawer() {
               ) : (
                 items.map((item) => (
                   <div key={item.id} className="border-b border-zinc-100 py-4 text-sm">
-                    <div className="flex justify-between gap-3">
+                    <div className="flex min-w-0 justify-between gap-3">
                       <div className="flex min-w-0 gap-3">
                         <Thumbnail
                           thumbnail={item.image}
                           size="square"
                           className="w-14 shrink-0 rounded bg-zinc-100"
                         />
-                        <div>
-                          <p className="font-medium">{item.title}</p>
-                          <p className="text-xs text-zinc-500">
+                        <div className="min-w-0">
+                          <p className="break-words font-medium">{item.title}</p>
+                          <p className="break-words text-xs text-zinc-500">
                             Style {item.styleNumber} · {item.color} · {item.size}
                           </p>
-                          <p className="mt-1 text-xs text-zinc-500">
+                          <p className="mt-1 break-words text-xs text-zinc-500">
                             {item.packSize}-piece pack
                           </p>
                         </div>
@@ -155,15 +155,16 @@ export default function SelectionDrawer() {
                       <button
                         aria-label="Remove item"
                         onClick={() => removeItem(item.id)}
+                        className="flex min-h-11 min-w-11 shrink-0 items-center justify-center"
                       >
                         <Trash className="text-zinc-500" />
                       </button>
                     </div>
-                    <div className="mt-3 flex items-center gap-3">
-                      <label className="text-xs text-zinc-500">Pieces</label>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <label className="mr-1 text-xs text-zinc-500">Pieces</label>
                       <input
                         aria-label={`Quantity for ${item.title}`}
-                        className="w-20 border border-zinc-300 px-2 py-1"
+                        className="h-11 w-24 border border-zinc-300 px-2"
                         min="1"
                         max={item.availableQuantity}
                         type="number"
@@ -183,7 +184,7 @@ export default function SelectionDrawer() {
               )}
             </div>
 
-            <div className="border-t border-zinc-200 pt-4">
+            <div className="shrink-0 border-t border-zinc-200 pt-4">
               <div className="mb-4 flex justify-between text-sm">
                 <span>{totals.styles} style(s)</span>
                 <span>{totals.pieces} piece(s)</span>
@@ -195,7 +196,7 @@ export default function SelectionDrawer() {
                   <input
                     aria-label="Customer Name"
                     autoComplete="name"
-                    className="border border-zinc-300 px-3 py-2"
+                    className="min-h-11 border border-zinc-300 px-3"
                     maxLength={120}
                     onChange={(event) => setContactName(event.target.value)}
                     required
@@ -207,7 +208,7 @@ export default function SelectionDrawer() {
                   <input
                     aria-label="WhatsApp Number"
                     autoComplete="tel"
-                    className="border border-zinc-300 px-3 py-2"
+                    className="min-h-11 border border-zinc-300 px-3"
                     inputMode="tel"
                     maxLength={40}
                     onChange={(event) => setCustomerWhatsapp(event.target.value)}
@@ -220,7 +221,7 @@ export default function SelectionDrawer() {
                   <input
                     aria-label="Country"
                     autoComplete="country-name"
-                    className="border border-zinc-300 px-3 py-2"
+                    className="min-h-11 border border-zinc-300 px-3"
                     maxLength={120}
                     onChange={(event) => setCountry(event.target.value)}
                     required
@@ -231,7 +232,7 @@ export default function SelectionDrawer() {
                   <span className="text-xs text-zinc-600">Message (optional)</span>
                   <textarea
                     aria-label="Message"
-                    className="min-h-20 border border-zinc-300 px-3 py-2"
+                    className="min-h-24 border border-zinc-300 px-3 py-2"
                     maxLength={2000}
                     onChange={(event) => setMessage(event.target.value)}
                     value={message}
@@ -250,7 +251,7 @@ export default function SelectionDrawer() {
                 </p>
               )}
               <button
-                className={`w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
+                className={`min-h-11 w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
                   !whatsapp || !items.length || isSubmittingInquiry
                     ? "cursor-not-allowed opacity-40"
                     : "hover:bg-amber-700"
@@ -264,7 +265,7 @@ export default function SelectionDrawer() {
               </button>
               <button
                 onClick={() => setClearConfirmationOpen(true)}
-                className="mt-3 w-full text-xs text-zinc-500 underline"
+                className="mt-3 min-h-11 w-full text-xs text-zinc-500 underline"
                 disabled={!items.length}
               >
                 Clear selection
@@ -296,20 +297,20 @@ export default function SelectionDrawer() {
             <Dialog.Close asChild>
               <button
                 aria-label="Close clear selection confirmation"
-                className="absolute right-4 top-4 text-zinc-500 hover:text-zinc-950"
+                className="absolute right-4 top-4 flex min-h-11 min-w-11 items-center justify-center text-zinc-500 hover:text-zinc-950"
               >
                 <XMark />
               </button>
             </Dialog.Close>
             <div className="mt-6 flex justify-end gap-3">
               <Dialog.Close asChild>
-                <button className="border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:border-zinc-950">
+                <button className="min-h-11 border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:border-zinc-950">
                   Cancel
                 </button>
               </Dialog.Close>
               <button
                 onClick={confirmClear}
-                className="bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                className="min-h-11 bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
               >
                 Clear Selection
               </button>

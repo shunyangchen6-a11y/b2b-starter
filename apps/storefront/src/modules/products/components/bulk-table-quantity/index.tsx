@@ -75,11 +75,12 @@ const BulkTableQuantity = ({ variantId, maxQuantity, onChange }: BulkTableQuanti
   }, [])
 
   return (
-    <div className="flex flex-row justify-between gap-2 w-full">
+    <div className="flex w-full items-center justify-between gap-2" data-testid={`quantity-control-${variantId}`}>
       <IconButton
         onClick={() => handleSubtract()}
-        className="rounded-full hover:bg-neutral-200"
+        className="min-h-11 min-w-11 rounded-full hover:bg-neutral-200"
         variant="transparent"
+        aria-label="Decrease quantity"
       >
         <MinusMini />
       </IconButton>
@@ -89,12 +90,13 @@ const BulkTableQuantity = ({ variantId, maxQuantity, onChange }: BulkTableQuanti
         onChange={(e) => handleChange(e)}
         onKeyDown={handleKeyDown}
         type="number"
-        className="max-w-10 text-center items-center justify-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="h-11 min-w-14 flex-1 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       <IconButton
         onClick={() => handleAdd()}
-        className="rounded-full hover:bg-neutral-200"
+        className="min-h-11 min-w-11 rounded-full hover:bg-neutral-200"
         variant="transparent"
+        aria-label="Increase quantity"
       >
         <PlusMini />
       </IconButton>

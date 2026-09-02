@@ -22,6 +22,13 @@ const ProductVariantsTable = ({
     0
   )
 
+  const optionValue = (variant: HttpTypes.StoreProductVariant, optionTitle: string) => {
+    const optionId = product.options?.find(
+      (option) => option.title?.toLowerCase() === optionTitle.toLowerCase()
+    )?.id
+    return variant.options?.find((option) => option.option_id === optionId)?.value || "—"
+  }
+
   const handleQuantityChange = (variantId: string, quantity: number) => {
     const variant = product.variants?.find((entry) => entry.id === variantId)
     const availableQuantity = variant?.manage_inventory === false
@@ -66,8 +73,56 @@ const ProductVariantsTable = ({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="overflow-x-auto p-px">
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className="grid gap-3 md:hidden" data-testid="mobile-variant-cards">
+        {product.variants?.map((variant) => {
+          const availableQuantity = variant.manage_inventory === false
+            ? undefined
+            : variantAvailableQuantity(variant)
+
+          return (
+            <article
+              key={variant.id}
+              className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+              data-testid="mobile-variant-card"
+            >
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <div className="col-span-2 min-w-0">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">SKU</dt>
+                  <dd className="mt-1 break-words font-medium leading-5 text-zinc-950">{variant.sku || "—"}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Color</dt>
+                  <dd className="mt-1 break-words text-zinc-900">{optionValue(variant, "Color")}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Size</dt>
+                  <dd className="mt-1 break-words text-zinc-900">{optionValue(variant, "Size")}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Wholesale price</dt>
+                  <dd className="mt-1 text-zinc-900">Contact for Wholesale Price</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Available</dt>
+                  <dd className="mt-1 font-medium text-zinc-900">
+                    {typeof availableQuantity === "number" ? `${availableQuantity} available` : "Available on request"}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-4 border-t border-zinc-100 pt-3">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">Pieces</p>
+                <BulkTableQuantity
+                  variantId={variant.id}
+                  maxQuantity={availableQuantity}
+                  onChange={handleQuantityChange}
+                />
+              </div>
+            </article>
+          )
+        })}
+      </div>
+      <div className="hidden overflow-x-auto p-px md:block">
         <Table className="w-full rounded-xl overflow-hidden shadow-borders-base border-none ">
           <Table.Header className="border-t-0">
             <Table.Row className="bg-neutral-100 border-none hover:!bg-neutral-100">
@@ -131,7 +186,7 @@ const ProductVariantsTable = ({
       <Button
         onClick={handleAddToSelection}
         variant="primary"
-        className="w-full h-10"
+        className="min-h-11 w-full md:h-10"
         disabled={totalQuantity === 0}
         data-testid="add-product-button"
       >
