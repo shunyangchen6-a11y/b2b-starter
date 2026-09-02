@@ -5,6 +5,7 @@ import { Pagination } from "@/modules/store/components/pagination"
 import { SortOptions } from "@/modules/store/components/refinement-list/sort-products"
 import { B2BCustomer } from "@/types"
 import { Container } from "@medusajs/ui"
+import { WholesaleFilters } from "@/lib/util/wholesale-filters"
 
 const PRODUCT_LIMIT = 12
 
@@ -26,6 +27,7 @@ export default async function PaginatedProducts({
   countryCode,
   customer,
   optionValueIds,
+  wholesaleFilters,
 }: {
   sortBy?: SortOptions
   page: number
@@ -35,6 +37,7 @@ export default async function PaginatedProducts({
   countryCode: string
   customer?: B2BCustomer | null
   optionValueIds?: string[]
+  wholesaleFilters?: WholesaleFilters
 }) {
   const queryParams: PaginatedProductsParams = {
     limit: 12,
@@ -61,21 +64,27 @@ export default async function PaginatedProducts({
   }
 
   let {
-    response: { products, count },
+    response: { products: fetchedProducts, count: fetchedCount },
   } = await listProductsWithSort({
     page,
     queryParams,
     sortBy,
     countryCode,
     optionValueIds,
+    wholesaleFilters,
   })
 
+  const products = fetchedProducts
+  const count = fetchedCount
   const totalPages = Math.ceil(count / PRODUCT_LIMIT)
 
   return (
     <>
+      <p className="mb-3 text-sm text-neutral-600" aria-live="polite">
+        {count} {count === 1 ? "product" : "products"}
+      </p>
       <ul
-        className="grid grid-cols-1 w-full small:grid-cols-3 medium:grid-cols-4 gap-3"
+        className="grid min-w-0 grid-cols-1 w-full gap-3 small:grid-cols-3 medium:grid-cols-4"
         data-testid="products-list"
       >
         {products.length > 0 ? (
@@ -88,7 +97,7 @@ export default async function PaginatedProducts({
           })
         ) : (
           <Container className="text-center text-sm text-neutral-500">
-            No products found for this category.
+            No products match your filters.
           </Container>
         )}
       </ul>

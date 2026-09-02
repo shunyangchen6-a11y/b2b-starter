@@ -6,6 +6,11 @@ import { clx, IconButton } from "@medusajs/ui"
 import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
+import {
+  getProductImageUrl,
+  WHOLESALE_PLACEHOLDER_IMAGE,
+} from "@/lib/util/product-image"
+
 type ImageGalleryProps = {
   product: HttpTypes.StoreProduct
 }
@@ -21,6 +26,13 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
     }
   )
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [selectedImageSource, setSelectedImageSource] = useState(() =>
+    getProductImageUrl(selectedImage.url)
+  )
+
+  useEffect(() => {
+    setSelectedImageSource(getProductImageUrl(selectedImage.url))
+  }, [selectedImage])
 
   const handleArrowClick = useCallback(
     (direction: "left" | "right") => {
@@ -78,16 +90,15 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
         id={selectedImage.id}
       >
         <div className="flex p-48">
-          {!!selectedImage.url && (
-            <Image
-              src={selectedImage.url}
-              priority
-              className="absolute inset-0 rounded-rounded p-20 overflow-visible object-contain"
-              alt={(selectedImage.metadata?.alt as string) || ""}
-              fill
-              sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
-            />
-          )}
+          <Image
+            src={selectedImageSource}
+            priority
+            className="absolute inset-0 rounded-rounded p-20 overflow-visible object-contain"
+            alt={(selectedImage.metadata?.alt as string) || "Wholesale product image"}
+            fill
+            sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
+            onError={() => setSelectedImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
+          />
         </div>
       </div>
       <div className="flex small:flex-row flex-col-reverse gap-y-3 justify-between w-full">
@@ -118,14 +129,17 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
               role="button"
             >
               <Image
-                src={image.url}
-                alt={(image.metadata?.alt as string) || ""}
+                src={getProductImageUrl(image.url)}
+                alt={(image.metadata?.alt as string) || "Wholesale product image"}
                 height={32}
                 width={32}
                 className={clx(
                   index === selectedImageIndex ? "opacity-100" : "opacity-40",
                   "hover:opacity-100 object-contain"
                 )}
+                onError={(event) => {
+                  event.currentTarget.src = WHOLESALE_PLACEHOLDER_IMAGE
+                }}
               />
             </li>
           ))}

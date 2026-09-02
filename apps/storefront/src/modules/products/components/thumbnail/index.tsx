@@ -1,8 +1,13 @@
+"use client"
+
 import { clx } from "@medusajs/ui"
 import Image from "next/image"
-import React from "react"
+import React, { useEffect, useState } from "react"
 
-import PlaceholderImage from "@/modules/common/icons/placeholder-image"
+import {
+  getProductImageUrl,
+  WHOLESALE_PLACEHOLDER_IMAGE,
+} from "@/lib/util/product-image"
 
 type ThumbnailProps = {
   thumbnail?: string | null
@@ -24,7 +29,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   "data-testid": dataTestid,
   type,
 }) => {
-  const initialImage = thumbnail || images?.[0]?.url
+  const initialImage = getProductImageUrl(thumbnail || images?.[0]?.url)
 
   return (
     <div
@@ -51,9 +56,15 @@ const ImageOrPlaceholder = ({
 }: Pick<ThumbnailProps, "size" | "type"> & {
   image?: string
 }) => {
-  return image ? (
+  const [imageSource, setImageSource] = useState(getProductImageUrl(image))
+
+  useEffect(() => {
+    setImageSource(getProductImageUrl(image))
+  }, [image])
+
+  return (
     <Image
-      src={image}
+      src={imageSource}
       alt="Thumbnail"
       className={clx("absolute inset-0 object-contain", {
         "p-4": type === "full",
@@ -63,11 +74,8 @@ const ImageOrPlaceholder = ({
       quality={50}
       sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
       fill
+      onError={() => setImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
     />
-  ) : (
-    <div className="w-full h-full absolute inset-0 flex items-center justify-center">
-      <PlaceholderImage size={size === "small" ? 16 : 24} />
-    </div>
   )
 }
 

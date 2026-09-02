@@ -43,6 +43,11 @@ yarn-error.log*
 # Turbo
 .turbo
 
+# Local tool caches
+.cache
+.cache*/
+.pnpm-store
+
 # vercel
 .vercel
 

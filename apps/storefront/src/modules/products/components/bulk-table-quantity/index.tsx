@@ -1,29 +1,41 @@
 import { MinusMini, PlusMini } from "@medusajs/icons"
 import { IconButton, Input } from "@medusajs/ui"
+import { normalizeQuantity } from "@/lib/selection/quote"
 import { useEffect, useState } from "react"
 
 type BulkTableQuantityProps = {
   variantId: string
+  maxQuantity?: number
   onChange: (variantId: string, quantity: number) => void
 }
 
-const BulkTableQuantity = ({ variantId, onChange }: BulkTableQuantityProps) => {
+const BulkTableQuantity = ({ variantId, maxQuantity, onChange }: BulkTableQuantityProps) => {
   const [quantity, setQuantity] = useState("0")
   const [shiftPressed, setShiftPressed] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuantity(e.target.value)
-    onChange(variantId, Number(e.target.value))
+    const normalizedQuantity = Math.min(
+      normalizeQuantity(e.target.value),
+      maxQuantity ?? Number.MAX_SAFE_INTEGER
+    )
+    setQuantity(normalizedQuantity.toString())
+    onChange(variantId, normalizedQuantity)
   }
 
   const handleAdd = () => {
-    const q = Math.max(Number(quantity) + (shiftPressed ? 10 : 1), 0)
+    const q = Math.min(
+      normalizeQuantity(quantity) + (shiftPressed ? 10 : 1),
+      maxQuantity ?? Number.MAX_SAFE_INTEGER
+    )
     setQuantity(q.toString())
     onChange(variantId, q)
   }
 
   const handleSubtract = () => {
-    const q = Math.max(Number(quantity) - (shiftPressed ? 10 : 1), 0)
+    const q = Math.max(
+      normalizeQuantity(quantity) - (shiftPressed ? 10 : 1),
+      0
+    )
     setQuantity(q.toString())
     onChange(variantId, q)
   }
@@ -63,25 +75,28 @@ const BulkTableQuantity = ({ variantId, onChange }: BulkTableQuantityProps) => {
   }, [])
 
   return (
-    <div className="flex flex-row justify-between gap-2 w-full">
+    <div className="flex w-full items-center justify-between gap-2" data-testid={`quantity-control-${variantId}`}>
       <IconButton
         onClick={() => handleSubtract()}
-        className="rounded-full hover:bg-neutral-200"
+        className="min-h-11 min-w-11 rounded-full hover:bg-neutral-200"
         variant="transparent"
+        aria-label="Decrease quantity"
       >
         <MinusMini />
       </IconButton>
       <Input
         value={quantity}
+        max={maxQuantity}
         onChange={(e) => handleChange(e)}
         onKeyDown={handleKeyDown}
         type="number"
-        className="max-w-10 text-center items-center justify-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="h-11 min-w-14 flex-1 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       <IconButton
         onClick={() => handleAdd()}
-        className="rounded-full hover:bg-neutral-200"
+        className="min-h-11 min-w-11 rounded-full hover:bg-neutral-200"
         variant="transparent"
+        aria-label="Increase quantity"
       >
         <PlusMini />
       </IconButton>

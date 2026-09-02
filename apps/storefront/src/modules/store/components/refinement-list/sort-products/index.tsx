@@ -35,11 +35,11 @@ const SortProducts = ({
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm p-2 justify-between">
-      <span className="text-neutral-500">Sort by:</span>
-      <div className="relative">
+    <div className="flex min-w-0 items-center justify-between gap-2 p-2 text-sm">
+      <span className="shrink-0 text-neutral-500">Sort by:</span>
+      <div className="relative min-w-0">
         <select
-          className="w-full pr-8 overflow-hidden focus:outline-none appearance-none"
+          className="min-h-11 w-full max-w-full appearance-none overflow-hidden pr-8 focus:outline-none"
           title="Sort by"
           value={sortBy}
           onChange={(e) => handleChange(e.target.value as SortOptions)}

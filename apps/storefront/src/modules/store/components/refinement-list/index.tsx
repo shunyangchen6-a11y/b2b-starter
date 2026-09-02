@@ -9,6 +9,8 @@ import SearchInResults from "./search-in-results"
 import { HttpTypes } from "@medusajs/types"
 import CategoryList from "./category-list"
 import OptionsPicker from "./options-picker"
+import WholesaleFilters from "./wholesale-filters"
+import type { WholesaleFilters as WholesaleFilterState } from "@/lib/util/wholesale-filters"
 
 type RefinementListProps = {
   sortBy: SortOptions
@@ -18,6 +20,8 @@ type RefinementListProps = {
   currentCategory?: HttpTypes.StoreProductCategory
   productOptions?: HttpTypes.StoreProductOption[]
   hideOptionsPicker?: boolean
+  products?: HttpTypes.StoreProduct[]
+  selectedFilters?: WholesaleFilterState
 }
 
 const RefinementList = ({
@@ -28,6 +32,8 @@ const RefinementList = ({
   currentCategory,
   productOptions,
   hideOptionsPicker,
+  products,
+  selectedFilters,
 }: RefinementListProps) => {
   const router = useRouter()
   const pathname = usePathname()
@@ -56,7 +62,7 @@ const RefinementList = ({
   }
 
   return (
-    <div className="flex flex-col divide-neutral-200 small:w-1/5 w-full gap-3">
+    <div className="flex min-w-0 flex-col gap-3 divide-neutral-200 small:w-1/5 w-full">
       <Container className="flex flex-col divide-y divide-neutral-200 p-0 w-full">
         <SearchInResults listName={listName} />
         <SortProducts
@@ -65,14 +71,20 @@ const RefinementList = ({
           data-testid={dataTestId}
         />
       </Container>
-      {categories && (
-        <CategoryList
-          categories={categories}
-          currentCategory={currentCategory}
-        />
-      )}
-      {!hideOptionsPicker && productOptions && productOptions.length > 0 && (
-        <OptionsPicker options={productOptions} />
+      {products && selectedFilters ? (
+        <WholesaleFilters products={products} selectedFilters={selectedFilters} />
+      ) : (
+        <>
+          {categories && (
+            <CategoryList
+              categories={categories}
+              currentCategory={currentCategory}
+            />
+          )}
+          {!hideOptionsPicker && productOptions && productOptions.length > 0 && (
+            <OptionsPicker options={productOptions} />
+          )}
+        </>
       )}
     </div>
   )
