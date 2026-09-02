@@ -3,7 +3,7 @@ import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/frame
 import { updateProductVariantsWorkflow } from "@medusajs/medusa/core-flows"
 
 const FS_TEST_SKU_PREFIX = "FS-TEST-"
-const PREVIEW_HANDLE_PATTERN = /(^|[-_])(?:preview|pr)(?:[-_]|$)/
+const MEDUSA_CLOUD_PREVIEW_ENVIRONMENT_TYPE = "preview-instance"
 
 type StockStatus = "in_stock" | "low_stock" | "sold_out"
 type SyncFailure = { sku: string; reason: string }
@@ -16,10 +16,10 @@ export type FsTestInventorySyncSummary = {
 }
 
 export const isPreviewInventorySyncEnabled = (env: NodeJS.ProcessEnv = process.env) => {
-  const handle = env.MEDUSA_CLOUD_ENVIRONMENT_HANDLE?.trim().toLowerCase() || ""
   return (
     env.MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED === "true" &&
-    PREVIEW_HANDLE_PATTERN.test(handle)
+    env.MEDUSA_CLOUD_ENVIRONMENT_TYPE?.trim().toLowerCase() ===
+      MEDUSA_CLOUD_PREVIEW_ENVIRONMENT_TYPE
   )
 }
 

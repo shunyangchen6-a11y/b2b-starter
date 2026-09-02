@@ -25,7 +25,7 @@ Create/edit products in Medusa Admin under Products. Add product images and a vi
 
 ## Temporary Preview FS-TEST inventory repair
 
-For a Medusa Cloud Preview whose existing `FS-TEST-` variants have zero inventory, set `MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED=true` only in that Preview environment. The server also requires the platform-provided `MEDUSA_CLOUD_ENVIRONMENT_HANDLE` to identify a Preview or PR environment, so the action is rejected in production.
+For a Medusa Cloud Preview whose existing `FS-TEST-` variants have zero inventory, set `MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED=true` only in that Preview environment's **Backend** variables. The server also requires Cloud's platform-provided `MEDUSA_CLOUD_ENVIRONMENT_TYPE=preview-instance`, so the action is rejected in Production and every long-lived environment. Do not configure the `MEDUSA_CLOUD_*` variables manually.
 
 After deployment, sign in to Admin and open **Wholesale CSV**. Use **Sync FS-TEST Inventory**, confirm the prompt, and verify the returned scan/sync counts. The action only updates existing `FS-TEST-` variants and sets absolute inventory levels, so it is safe to run twice.
 

@@ -12,9 +12,10 @@ import {
 
 describe("Preview FS-TEST inventory sync", () => {
   it("requires an explicitly enabled Preview environment and an administrator actor", () => {
-    expect(isPreviewInventorySyncEnabled({ MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED: "true", MEDUSA_CLOUD_ENVIRONMENT_HANDLE: "preview-pr-1" })).toBe(true)
-    expect(isPreviewInventorySyncEnabled({ MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED: "true", MEDUSA_CLOUD_ENVIRONMENT_HANDLE: "production" })).toBe(false)
-    expect(isPreviewInventorySyncEnabled({ MEDUSA_CLOUD_ENVIRONMENT_HANDLE: "preview-pr-1" })).toBe(false)
+    expect(isPreviewInventorySyncEnabled({ MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED: "true", MEDUSA_CLOUD_ENVIRONMENT_TYPE: "preview-instance" })).toBe(true)
+    expect(isPreviewInventorySyncEnabled({ MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED: "true", MEDUSA_CLOUD_ENVIRONMENT_TYPE: "production" })).toBe(false)
+    expect(isPreviewInventorySyncEnabled({ MEDUSA_PREVIEW_INVENTORY_SYNC_ENABLED: "true", MEDUSA_CLOUD_ENVIRONMENT_TYPE: "long-lived" })).toBe(false)
+    expect(isPreviewInventorySyncEnabled({ MEDUSA_CLOUD_ENVIRONMENT_TYPE: "preview-instance" })).toBe(false)
     expect(isAdminActor({ actor_id: "user_1", actor_type: "user" })).toBe(true)
     expect(isAdminActor({ actor_id: "customer_1", actor_type: "customer" })).toBe(false)
     expect(isAdminActor()).toBe(false)
