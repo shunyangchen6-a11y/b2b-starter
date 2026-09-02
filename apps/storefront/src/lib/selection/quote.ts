@@ -9,6 +9,7 @@ export type SelectionItem = {
   size: string
   quantity: number
   packSize: 5 | 10
+  availableQuantity?: number
   image?: string
 }
 
@@ -77,6 +78,9 @@ export const normalizeSelectionItem = (
     size: stringValue(item.size),
     quantity,
     packSize: normalizeQuantity(item.packSize) === 10 ? 10 : 5,
+    availableQuantity: typeof item.availableQuantity === "undefined"
+      ? undefined
+      : normalizeQuantity(item.availableQuantity),
     image: typeof item.image === "string" ? item.image : undefined,
   }
 }
@@ -160,6 +164,12 @@ export const selectionTotals = (items: SelectionItem[]) => {
     ),
   }
 }
+
+export const isSelectionWithinAvailability = (items: SelectionItem[]) =>
+  normalizeSelectionItems(items).every(
+    (item) =>
+      item.availableQuantity === undefined || item.quantity <= item.availableQuantity
+  )
 
 export const createStoreInquiryPayload = ({
   items,

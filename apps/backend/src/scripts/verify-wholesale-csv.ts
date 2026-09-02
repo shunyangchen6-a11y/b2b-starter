@@ -67,9 +67,11 @@ const cleanup = async (container: MedusaContainer) => {
 export default async function verifyWholesaleCsv({ container }: { container: MedusaContainer }) {
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as any
   let passed = false
+  let stage = "starting"
   try {
     console.log("WHOLESALE_CSV_VERIFICATION: starting")
     await cleanup(container)
+    stage = "baseline export"
     console.log("WHOLESALE_CSV_VERIFICATION: temporary cleanup complete")
     const inquiryService = container.resolve(INQUIRY_MODULE) as any
     const [, inquiriesBefore] = await inquiryService.listAndCountInquiries({})
@@ -85,6 +87,7 @@ export default async function verifyWholesaleCsv({ container }: { container: Med
     console.log("WHOLESALE_CSV_VERIFICATION: temporary preview complete")
     assert(preview.issues.length === 0, "Temporary import preview has validation errors.")
     assert(preview.summary.new_products === 3 && preview.summary.new_variants === 6, "Temporary import preview counts are incorrect.")
+    stage = "temporary import"
     await importWholesaleCsv(container, csv)
     console.log("WHOLESALE_CSV_VERIFICATION: temporary import complete")
 
@@ -97,6 +100,12 @@ export default async function verifyWholesaleCsv({ container }: { container: Med
     const exportedTemporaryRows = parseAndValidateWholesaleCsv(await exportWholesaleCsv(container)).rows.filter((entry) => temporaryHandles.includes(entry.product_handle))
     console.log("WHOLESALE_CSV_VERIFICATION: re-export complete")
     assert(exportedTemporaryRows.length === 6, "Imported products were not included in export.")
+    const expectedInventoryBySku = new Map(verificationRows.map((entry) => [entry.sku, entry.inventory_quantity]))
+    assert(
+      exportedTemporaryRows.every((entry) => entry.inventory_quantity === expectedInventoryBySku.get(entry.sku)),
+      "CSV import did not create the requested inventory levels."
+    )
+    stage = "re-import"
     const reimportCsv = serializeWholesaleCsv(exportedTemporaryRows)
     const reimportPreview = await previewWholesaleCsv(container, reimportCsv)
     assert(reimportPreview.issues.length === 0, "Exported CSV cannot be re-imported.")
@@ -106,6 +115,7 @@ export default async function verifyWholesaleCsv({ container }: { container: Med
     const afterReimport = await productCount(container.resolve(Modules.PRODUCT))
     assert(afterReimport.length === 3 && afterReimport.reduce((count, product) => count + (product.variants?.length || 0), 0) === 6, "Re-import created duplicate products or variants.")
 
+    stage = "invalid input checks"
     const invalidCases: Array<[string, string]> = [
       ["duplicate SKU", serializeWholesaleCsv([row({ sku: "CSV-VERIFY-DUP" }), row({ sku: "CSV-VERIFY-DUP", color: "White" })])],
       ["invalid category", serializeWholesaleCsv([row({ category: "not-a-category" })])],
@@ -121,6 +131,7 @@ export default async function verifyWholesaleCsv({ container }: { container: Med
 
     const [, inquiriesAfter] = await inquiryService.listAndCountInquiries({})
     assert(inquiriesBefore === inquiriesAfter, "Wholesale CSV verification changed inquiry data.")
+    stage = "complete"
     passed = true
     console.log("WHOLESALE_CSV_VERIFICATION: PASS")
     console.log("- Exported 5 existing wholesale test products")
@@ -134,7 +145,7 @@ export default async function verifyWholesaleCsv({ container }: { container: Med
   } finally {
     await cleanup(container)
     mkdirSync(join(process.cwd(), ".cache"), { recursive: true })
-    writeFileSync(join(process.cwd(), ".cache", "wholesale-csv-verification.json"), JSON.stringify({ passed, completed_at: new Date().toISOString() }))
+    writeFileSync(join(process.cwd(), ".cache", "wholesale-csv-verification.json"), JSON.stringify({ passed, stage, completed_at: new Date().toISOString() }))
     if (passed) console.log("- Temporary verification products removed")
   }
 }

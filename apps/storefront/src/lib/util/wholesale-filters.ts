@@ -1,4 +1,5 @@
 import { HttpTypes } from "@medusajs/types"
+import { wholesaleStockStatusCode } from "./wholesale"
 
 export const WHOLESALE_FILTER_KEYS = [
   "category",
@@ -97,7 +98,7 @@ export const filterWholesaleProducts = (
       matchesOne(filters.color, colors) &&
       matchesOne(filters.size, sizes) &&
       matchesOne(filters.fabric, [metadataValue(product, "fabric")]) &&
-      matchesOne(filters.stock_status, [metadataValue(product, "stock_status")])
+      matchesOne(filters.stock_status, [wholesaleStockStatusCode(product)])
     )
   })
 
@@ -125,9 +126,8 @@ export const getWholesaleFilterOptions = (
     variantOptionValues(product, "Color").forEach((value) => colorOptions.add(value))
     variantOptionValues(product, "Size").forEach((value) => sizeOptions.add(value))
     const fabric = metadataValue(product, "fabric")
-    const stockStatus = metadataValue(product, "stock_status")
     if (fabric) fabricOptions.add(fabric)
-    if (stockStatus) stockStatusOptions.add(stockStatus)
+    stockStatusOptions.add(wholesaleStockStatusCode(product))
   })
 
   return {

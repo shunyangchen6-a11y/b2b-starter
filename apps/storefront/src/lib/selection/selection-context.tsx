@@ -51,7 +51,11 @@ export function SelectionProvider({ children }: PropsWithChildren) {
     addItem: (item) =>
       setItems((current) => mergeSelectionItem(current, item)),
     updateQuantity: (id, quantity) => {
-      const normalizedQuantity = normalizeQuantity(quantity)
+      const selectedItem = items.find((item) => item.id === id)
+      const normalizedQuantity = Math.min(
+        normalizeQuantity(quantity),
+        selectedItem?.availableQuantity ?? Number.MAX_SAFE_INTEGER
+      )
 
       if (normalizedQuantity === 0) {
         return

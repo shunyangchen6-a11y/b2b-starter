@@ -35,7 +35,7 @@ const createTestPayload = async (container: MedusaContainer) => {
     message: "Please quote Blue S and Blue M together.",
     page_url: `https://storefront.test/dk/products/${product.handle}`,
     total_styles: 1,
-    total_pieces: 1555,
+    total_pieces: 5,
     items: [
       {
         title: product.title,
@@ -44,7 +44,7 @@ const createTestPayload = async (container: MedusaContainer) => {
         sku: blueS.sku,
         color: "Blue",
         size: "S",
-        quantity: 444,
+        quantity: 2,
         packSize,
       },
       {
@@ -54,7 +54,7 @@ const createTestPayload = async (container: MedusaContainer) => {
         sku: blueM.sku,
         color: "Blue",
         size: "M",
-        quantity: 1111,
+        quantity: 3,
         packSize,
       },
     ],
@@ -117,6 +117,22 @@ export default async function verifyStorefrontInquiryApi({
       { expiresIn: "5m" }
     )
 
+    const overstockResponse = await fetch(`${backendUrl}/store/inquiries`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-publishable-api-key": publishableApiKey,
+      },
+      body: JSON.stringify({
+        ...testPayload,
+        total_pieces: 999999,
+        items: [{ ...testPayload.items[0], quantity: 999999 }],
+      }),
+    })
+    if (overstockResponse.status !== 400) {
+      throw new Error(`Overstock inquiry was not rejected: ${overstockResponse.status}`)
+    }
+
     const postResponse = await fetch(`${backendUrl}/store/inquiries`, {
       method: "POST",
       headers: {
@@ -128,7 +144,11 @@ export default async function verifyStorefrontInquiryApi({
     const postBody = await postResponse.json()
 
     if (!postResponse.ok || !postBody?.inquiry?.id) {
-      throw new Error(`POST /store/inquiries failed with ${postResponse.status}`)
+      throw new Error(
+        `POST /store/inquiries failed with ${postResponse.status}: ${
+          typeof postBody?.message === "string" ? postBody.message : "No error message returned"
+        }`
+      )
     }
     inquiryId = postBody.inquiry.id
 
@@ -169,15 +189,15 @@ export default async function verifyStorefrontInquiryApi({
       selectedItems[0]?.variantId !== testPayload.items[0].variantId ||
       selectedItems[0]?.color !== "Blue" ||
       selectedItems[0]?.size !== "S" ||
-      selectedItems[0]?.quantity !== 444 ||
+      selectedItems[0]?.quantity !== 2 ||
       selectedItems[0]?.packSize !== testPayload.items[0].packSize ||
       selectedItems[1]?.sku !== testPayload.items[1].sku ||
       selectedItems[1]?.variantId !== testPayload.items[1].variantId ||
       selectedItems[1]?.color !== "Blue" ||
       selectedItems[1]?.size !== "M" ||
-      selectedItems[1]?.quantity !== 1111 ||
+      selectedItems[1]?.quantity !== 3 ||
       selectedItems[1]?.packSize !== testPayload.items[1].packSize ||
-      detailBody?.inquiry?.total_pieces !== 1555
+      detailBody?.inquiry?.total_pieces !== 5
     ) {
       throw new Error(`GET /admin/inquiries/:id failed with ${detailResponse.status}`)
     }

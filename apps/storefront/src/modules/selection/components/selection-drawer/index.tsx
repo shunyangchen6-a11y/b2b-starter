@@ -4,6 +4,7 @@ import {
   createWhatsAppLink,
   createWhatsAppMessage,
   createStoreInquiryPayload,
+  isSelectionWithinAvailability,
   selectionTotals,
 } from "@/lib/selection/quote"
 import { useSelection } from "@/lib/selection/selection-context"
@@ -39,6 +40,11 @@ export default function SelectionDrawer() {
 
     if (items.some((item) => !item.sku)) {
       setInquiryError("One or more selected variants are missing a SKU. Remove and add them again before sending your inquiry.")
+      return
+    }
+
+    if (!isSelectionWithinAvailability(items)) {
+      setInquiryError("One or more selected quantities exceed available stock. Update your Selection List and try again.")
       return
     }
 
@@ -159,12 +165,18 @@ export default function SelectionDrawer() {
                         aria-label={`Quantity for ${item.title}`}
                         className="w-20 border border-zinc-300 px-2 py-1"
                         min="1"
+                        max={item.availableQuantity}
                         type="number"
                         value={item.quantity}
                         onChange={(event) =>
                           updateQuantity(item.id, Number(event.target.value))
                         }
                       />
+                      {item.availableQuantity !== undefined && (
+                        <span className="text-xs text-zinc-500">
+                          {item.availableQuantity} available
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))

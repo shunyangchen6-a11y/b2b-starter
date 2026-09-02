@@ -2,6 +2,7 @@ import { createStep, createWorkflow, StepResponse, WorkflowResponse } from "@med
 import { INQUIRY_MODULE } from "../../modules/inquiry"
 import InquiryModuleService from "../../modules/inquiry/service"
 import { CreateInquiryType } from "../../api/store/inquiries/validators"
+import { validateInquiryInventoryStep } from "./validate-inquiry-inventory"
 
 const createInquiryStep = createStep("create-inquiry", async (input: CreateInquiryType, { container }) => {
   const service = container.resolve<InquiryModuleService>(INQUIRY_MODULE)
@@ -13,6 +14,7 @@ const createInquiryStep = createStep("create-inquiry", async (input: CreateInqui
 })
 
 export const createInquiryWorkflow = createWorkflow("create-inquiry", (input: CreateInquiryType) => {
-  const inquiry = createInquiryStep(input)
+  const validatedInput = validateInquiryInventoryStep(input)
+  const inquiry = createInquiryStep(validatedInput)
   return new WorkflowResponse({ inquiry })
 })

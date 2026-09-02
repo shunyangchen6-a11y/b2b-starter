@@ -5,21 +5,28 @@ import { useEffect, useState } from "react"
 
 type BulkTableQuantityProps = {
   variantId: string
+  maxQuantity?: number
   onChange: (variantId: string, quantity: number) => void
 }
 
-const BulkTableQuantity = ({ variantId, onChange }: BulkTableQuantityProps) => {
+const BulkTableQuantity = ({ variantId, maxQuantity, onChange }: BulkTableQuantityProps) => {
   const [quantity, setQuantity] = useState("0")
   const [shiftPressed, setShiftPressed] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const normalizedQuantity = normalizeQuantity(e.target.value)
+    const normalizedQuantity = Math.min(
+      normalizeQuantity(e.target.value),
+      maxQuantity ?? Number.MAX_SAFE_INTEGER
+    )
     setQuantity(normalizedQuantity.toString())
     onChange(variantId, normalizedQuantity)
   }
 
   const handleAdd = () => {
-    const q = normalizeQuantity(quantity) + (shiftPressed ? 10 : 1)
+    const q = Math.min(
+      normalizeQuantity(quantity) + (shiftPressed ? 10 : 1),
+      maxQuantity ?? Number.MAX_SAFE_INTEGER
+    )
     setQuantity(q.toString())
     onChange(variantId, q)
   }
@@ -78,6 +85,7 @@ const BulkTableQuantity = ({ variantId, onChange }: BulkTableQuantityProps) => {
       </IconButton>
       <Input
         value={quantity}
+        max={maxQuantity}
         onChange={(e) => handleChange(e)}
         onKeyDown={handleKeyDown}
         type="number"

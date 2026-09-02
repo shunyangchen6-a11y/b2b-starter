@@ -164,7 +164,7 @@ export const importWholesaleCsv = async (container: MedusaContainer, csv: string
         category_ids: [categoryIds.get(first.category)!], metadata: wholesaleMetadata(first),
         images: images.map((url) => ({ url })), thumbnail: images[0],
         options: [{ title: "Color", values: Array.from(new Set(rows.map((row) => row.color))) }, { title: "Size", values: Array.from(new Set(rows.map((row) => row.size))) }],
-        variants: rows.map((row) => ({ title: `${row.color} / ${row.size}`, sku: row.sku, options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: row.stock_status === "sold_out", prices: [{ amount: 1, currency_code: "usd" }] })),
+        variants: rows.map((row) => ({ title: `${row.color} / ${row.size}`, sku: row.sku, options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false, prices: [{ amount: 1, currency_code: "usd" }] })),
       }
     }) } })
   }
@@ -186,7 +186,7 @@ export const importWholesaleCsv = async (container: MedusaContainer, csv: string
   if (rowsForNewVariants.length) {
     await createProductVariantsWorkflow(container).run({ input: { product_variants: rowsForNewVariants.map((row) => ({
       product_id: productByHandle.get(row.product_handle)!.id, title: `${row.color} / ${row.size}`, sku: row.sku,
-      options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: row.stock_status === "sold_out", prices: [{ amount: 1, currency_code: "usd" }],
+      options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false, prices: [{ amount: 1, currency_code: "usd" }],
     })) } })
   }
 
@@ -196,11 +196,15 @@ export const importWholesaleCsv = async (container: MedusaContainer, csv: string
   }) as { data: ExistingProduct[] }
   const variantIdBySku = new Map(productsWithVariants.flatMap((product) => product.variants || []).map((variant) => [variant.sku, variant.id]))
   await updateProductVariantsWorkflow(container).run({ input: { product_variants: preview.rows.map((row) => ({
-    id: variantIdBySku.get(row.sku)!, title: `${row.color} / ${row.size}`, sku: row.sku, options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: row.stock_status === "sold_out",
+    id: variantIdBySku.get(row.sku)!, title: `${row.color} / ${row.size}`, sku: row.sku, options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false,
   })) } })
 
   const { data: salesChannels } = await query.graph({ entity: "sales_channel", fields: ["id"] })
-  await Promise.all(salesChannels.map((salesChannel: { id: string }) => linkProductsToSalesChannelWorkflow(container).run({ input: { id: salesChannel.id, add: productsWithVariants.map((product) => product.id) } })))
+  for (const salesChannel of salesChannels as Array<{ id: string }>) {
+    await linkProductsToSalesChannelWorkflow(container).run({
+      input: { id: salesChannel.id, add: productsWithVariants.map((product) => product.id) },
+    })
+  }
   await ensureInventory(container, preview.rows)
   return preview.summary
 }

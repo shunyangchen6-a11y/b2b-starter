@@ -1,6 +1,6 @@
 import { useSelection } from "@/lib/selection/selection-context"
 import { normalizeQuantity } from "@/lib/selection/quote"
-import { productStyleNumber, wholesaleValue } from "@/lib/util/wholesale"
+import { productStyleNumber, variantAvailableQuantity, wholesaleValue } from "@/lib/util/wholesale"
 import { HttpTypes } from "@medusajs/types"
 import { clx, Table } from "@medusajs/ui"
 import Button from "@/modules/common/components/button"
@@ -23,7 +23,11 @@ const ProductVariantsTable = ({
   )
 
   const handleQuantityChange = (variantId: string, quantity: number) => {
-    const normalizedQuantity = normalizeQuantity(quantity)
+    const variant = product.variants?.find((entry) => entry.id === variantId)
+    const availableQuantity = variant?.manage_inventory === false
+      ? Number.MAX_SAFE_INTEGER
+      : variant ? variantAvailableQuantity(variant) : 0
+    const normalizedQuantity = Math.min(normalizeQuantity(quantity), availableQuantity)
 
     setQuantities((prev) => {
       const next = new Map(prev)
@@ -37,7 +41,10 @@ const ProductVariantsTable = ({
   const handleAddToSelection = () => {
     quantities.forEach((quantity, variantId) => {
       const variant = product.variants?.find((entry) => entry.id === variantId)
-      const normalizedQuantity = normalizeQuantity(quantity)
+      const availableQuantity = variant?.manage_inventory === false
+        ? Number.MAX_SAFE_INTEGER
+        : variant ? variantAvailableQuantity(variant) : 0
+      const normalizedQuantity = Math.min(normalizeQuantity(quantity), availableQuantity)
       if (!variant || normalizedQuantity === 0) return
       const options = Object.fromEntries((variant.options || []).map((option) => [option.option_id || option.id || "option", option.value || ""]))
       addItem({
@@ -51,6 +58,7 @@ const ProductVariantsTable = ({
         size: Object.values(options)[1] || Object.values(options)[0] || "Mixed",
         quantity: normalizedQuantity,
         packSize: wholesaleValue(product.metadata, "pack_size", "5") === "10" ? 10 : 5,
+        availableQuantity: Number.isSafeInteger(availableQuantity) ? availableQuantity : undefined,
         image: product.thumbnail || undefined,
       })
     })
@@ -80,6 +88,9 @@ const ProductVariantsTable = ({
           </Table.Header>
           <Table.Body className="border-none">
             {product.variants?.map((variant, index) => {
+              const availableQuantity = variant.manage_inventory === false
+                ? undefined
+                : variantAvailableQuantity(variant)
               return (
                 <Table.Row
                   key={variant.id}
@@ -102,8 +113,14 @@ const ProductVariantsTable = ({
                   <Table.Cell className="pl-1 !pr-1">
                     <BulkTableQuantity
                       variantId={variant.id}
+                      maxQuantity={availableQuantity}
                       onChange={handleQuantityChange}
                     />
+                    {typeof availableQuantity === "number" && (
+                      <p className="px-2 pt-1 text-xs text-zinc-500">
+                        {availableQuantity} available
+                      </p>
+                    )}
                   </Table.Cell>
                 </Table.Row>
               )

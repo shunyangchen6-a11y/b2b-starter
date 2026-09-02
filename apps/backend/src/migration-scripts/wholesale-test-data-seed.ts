@@ -9,6 +9,7 @@ import {
   createProductCategoriesWorkflow,
   createProductsWorkflow,
   linkProductsToSalesChannelWorkflow,
+  updateProductVariantsWorkflow,
   updateProductsWorkflow,
 } from "@medusajs/medusa/core-flows"
 
@@ -275,13 +276,53 @@ export default async function wholesale_test_data_seed({
       )
     )
 
-    await inventoryService.createInventoryLevels(
-      variantsWithoutInventory.map(({ definition }: any, index: number) => ({
-        inventory_item_id: inventoryItems[index].id,
+  }
+
+  const { data: inventoryReadyProducts } = await query.graph({
+    entity: "product",
+    fields: ["handle", "variants.id", "variants.sku", "variants.inventory_items.inventory_item_id"],
+    filters: { handle: { $in: products.map((product) => product.handle) } },
+  })
+  const variantsWithDefinitions = inventoryReadyProducts.flatMap((product: any) => {
+    const definition = products.find((item) => item.handle === product.handle)!
+    return (product.variants || []).map((variant: any) => ({ variant, definition }))
+  })
+
+  await updateProductVariantsWorkflow(container).run({
+    input: {
+      product_variants: variantsWithDefinitions.map(({ variant }: any) => ({
+        id: variant.id,
+        manage_inventory: true,
+        allow_backorder: false,
+      })),
+    },
+  })
+
+  for (const { variant, definition } of variantsWithDefinitions) {
+    const inventoryItemId = variant.inventory_items?.[0]?.inventory_item_id
+    if (!inventoryItemId) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `Missing inventory item for wholesale variant ${variant.sku}.`
+      )
+    }
+    const stockedQuantity = stockQuantityFor(definition.stockStatus)
+    const levels = await inventoryService.listInventoryLevels({
+      inventory_item_id: inventoryItemId,
+      location_id: stockLocation.id,
+    })
+    if (levels[0]) {
+      await inventoryService.updateInventoryLevels({
+        id: levels[0].id,
+        stocked_quantity: stockedQuantity,
+      })
+    } else {
+      await inventoryService.createInventoryLevels({
+        inventory_item_id: inventoryItemId,
         location_id: stockLocation.id,
-        stocked_quantity: stockQuantityFor(definition.stockStatus),
-      }))
-    )
+        stocked_quantity: stockedQuantity,
+      })
+    }
   }
 
   logger.info(`Wholesale test data ready: ${products.length} products (${TEST_DATA_MARKER}).`)
