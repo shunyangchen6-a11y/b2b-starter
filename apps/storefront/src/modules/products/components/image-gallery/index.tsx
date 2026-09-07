@@ -92,7 +92,7 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
         <Image
           src={selectedImageSource}
           priority
-          className="absolute inset-0 object-cover"
+          className="absolute inset-0 object-contain object-center"
           alt={(selectedImage.metadata?.alt as string) || "Wholesale product image"}
           fill
           sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 800px"

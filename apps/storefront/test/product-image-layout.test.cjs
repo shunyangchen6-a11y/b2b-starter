@@ -17,13 +17,14 @@ test("product cards use a full-width 4:5 cover image without inset padding", () 
   assert.doesNotMatch(preview, /p-10/)
 })
 
-test("product detail gallery and thumbnails crop images with object-cover", () => {
+test("product detail main image fits the frame without cropping while thumbnails stay cropped", () => {
   const gallery = source("modules", "products", "components", "image-gallery", "index.tsx")
 
   assert.match(gallery, /aspect-\[4\/5\] w-full overflow-hidden rounded-rounded/)
-  assert.match(gallery, /className="absolute inset-0 object-cover"/)
+  assert.match(gallery, /className="absolute inset-0 object-contain object-center"/)
   assert.match(gallery, /w-12 aspect-\[4\/5\] shrink-0 overflow-hidden rounded-rounded/)
-  assert.doesNotMatch(gallery, /p-20|p-48|object-contain/)
+  assert.match(gallery, /hover:opacity-100 object-cover/)
+  assert.doesNotMatch(gallery, /p-20|p-48/)
 })
 
 test("thumbnail cover mode removes contain padding", () => {
