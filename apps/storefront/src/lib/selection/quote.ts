@@ -36,6 +36,9 @@ export type StoreInquiryPayload = {
   message?: string
 }
 
+export const WHOLESALE_VARIANT_MOQ = 5
+export const WHOLESALE_ORDER_MOQ = 100
+
 type SelectionItemInput = Partial<SelectionItem> & Record<string, unknown>
 
 export const normalizeQuantity = (value: unknown) => {
@@ -49,6 +52,29 @@ export const normalizeQuantity = (value: unknown) => {
   return Number.isSafeInteger(quantity) && quantity >= 0 ? quantity : 0
 }
 
+export const maximumSelectableQuantity = (availableQuantity: unknown) =>
+  Math.floor(normalizeQuantity(availableQuantity) / WHOLESALE_VARIANT_MOQ) * WHOLESALE_VARIANT_MOQ
+
+export const normalizeSelectionQuantity = (
+  value: unknown,
+  availableQuantity?: unknown
+) => {
+  const quantity = normalizeQuantity(value)
+  const cappedQuantity = typeof availableQuantity === "undefined"
+    ? quantity
+    : Math.min(quantity, maximumSelectableQuantity(availableQuantity))
+
+  return Math.floor(cappedQuantity / WHOLESALE_VARIANT_MOQ) * WHOLESALE_VARIANT_MOQ
+}
+
+export const isValidSelectionQuantity = (value: unknown) => {
+  const quantity = normalizeQuantity(value)
+  return quantity === 0 || (
+    quantity >= WHOLESALE_VARIANT_MOQ &&
+    quantity % WHOLESALE_VARIANT_MOQ === 0
+  )
+}
+
 const stringValue = (value: unknown) =>
   typeof value === "string" ? value : ""
 
@@ -60,7 +86,10 @@ export const normalizeSelectionItem = (
   }
 
   const item = value as SelectionItemInput
-  const quantity = normalizeQuantity(item.quantity)
+  const availableQuantity = typeof item.availableQuantity === "undefined"
+    ? undefined
+    : normalizeQuantity(item.availableQuantity)
+  const quantity = normalizeSelectionQuantity(item.quantity, availableQuantity)
   const id = stringValue(item.id)
 
   if (!id || quantity === 0) {
@@ -78,9 +107,7 @@ export const normalizeSelectionItem = (
     size: stringValue(item.size),
     quantity,
     packSize: normalizeQuantity(item.packSize) === 10 ? 10 : 5,
-    availableQuantity: typeof item.availableQuantity === "undefined"
-      ? undefined
-      : normalizeQuantity(item.availableQuantity),
+    availableQuantity,
     image: typeof item.image === "string" ? item.image : undefined,
   }
 }
@@ -132,8 +159,9 @@ export const mergeSelectionItem = (
     entry.id === nextItem.id
       ? {
           ...entry,
-          quantity: normalizeQuantity(
-            normalizeQuantity(entry.quantity) + nextItem.quantity
+          quantity: normalizeSelectionQuantity(
+            normalizeSelectionQuantity(entry.quantity, entry.availableQuantity) + nextItem.quantity,
+            entry.availableQuantity
           ),
         }
       : entry
@@ -165,10 +193,15 @@ export const selectionTotals = (items: SelectionItem[]) => {
   }
 }
 
+export const meetsWholesaleOrderMinimum = (items: SelectionItem[]) =>
+  selectionTotals(items).pieces >= WHOLESALE_ORDER_MOQ
+
 export const isSelectionWithinAvailability = (items: SelectionItem[]) =>
-  normalizeSelectionItems(items).every(
+  items.every(
     (item) =>
-      item.availableQuantity === undefined || item.quantity <= item.availableQuantity
+      item.availableQuantity === undefined ||
+      normalizeQuantity(item.quantity) <=
+        maximumSelectableQuantity(item.availableQuantity)
   )
 
 export const createStoreInquiryPayload = ({

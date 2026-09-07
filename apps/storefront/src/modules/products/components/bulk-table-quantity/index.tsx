@@ -1,7 +1,11 @@
 import { MinusMini, PlusMini } from "@medusajs/icons"
 import { IconButton, Input } from "@medusajs/ui"
-import { normalizeQuantity } from "@/lib/selection/quote"
-import { useEffect, useState } from "react"
+import {
+  maximumSelectableQuantity,
+  normalizeQuantity,
+  normalizeSelectionQuantity,
+} from "@/lib/selection/quote"
+import { useState } from "react"
 
 type BulkTableQuantityProps = {
   variantId: string
@@ -11,31 +15,24 @@ type BulkTableQuantityProps = {
 
 const BulkTableQuantity = ({ variantId, maxQuantity, onChange }: BulkTableQuantityProps) => {
   const [quantity, setQuantity] = useState("0")
-  const [shiftPressed, setShiftPressed] = useState(false)
+  const maximumQuantity = typeof maxQuantity === "undefined"
+    ? undefined
+    : maximumSelectableQuantity(maxQuantity)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const normalizedQuantity = Math.min(
-      normalizeQuantity(e.target.value),
-      maxQuantity ?? Number.MAX_SAFE_INTEGER
-    )
+    const normalizedQuantity = normalizeSelectionQuantity(e.target.value, maxQuantity)
     setQuantity(normalizedQuantity.toString())
     onChange(variantId, normalizedQuantity)
   }
 
   const handleAdd = () => {
-    const q = Math.min(
-      normalizeQuantity(quantity) + (shiftPressed ? 10 : 1),
-      maxQuantity ?? Number.MAX_SAFE_INTEGER
-    )
+    const q = normalizeSelectionQuantity(normalizeQuantity(quantity) + 5, maxQuantity)
     setQuantity(q.toString())
     onChange(variantId, q)
   }
 
   const handleSubtract = () => {
-    const q = Math.max(
-      normalizeQuantity(quantity) - (shiftPressed ? 10 : 1),
-      0
-    )
+    const q = Math.max(normalizeSelectionQuantity(quantity, maxQuantity) - 5, 0)
     setQuantity(q.toString())
     onChange(variantId, q)
   }
@@ -52,28 +49,6 @@ const BulkTableQuantity = ({ variantId, maxQuantity, onChange }: BulkTableQuanti
     }
   }
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
-        setShiftPressed(true)
-      }
-    }
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
-        setShiftPressed(false)
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    window.addEventListener("keyup", handleKeyUp)
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-      window.removeEventListener("keyup", handleKeyUp)
-    }
-  }, [])
-
   return (
     <div className="flex w-full items-center justify-between gap-2" data-testid={`quantity-control-${variantId}`}>
       <IconButton
@@ -86,7 +61,9 @@ const BulkTableQuantity = ({ variantId, maxQuantity, onChange }: BulkTableQuanti
       </IconButton>
       <Input
         value={quantity}
-        max={maxQuantity}
+        min="0"
+        max={maximumQuantity}
+        step="5"
         onChange={(e) => handleChange(e)}
         onKeyDown={handleKeyDown}
         type="number"

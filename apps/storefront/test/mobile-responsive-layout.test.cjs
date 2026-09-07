@@ -31,8 +31,8 @@ for (const viewport of [360, 430]) {
 
 test("mobile quantity controls keep 44px targets and preserve bounded quantity input", () => {
   assert.match(quantityControl, /min-h-11 min-w-11/)
-  assert.match(quantityControl, /max=\{maxQuantity\}/)
-  assert.match(quantityControl, /Math\.min\([\s\S]*maxQuantity/)
+  assert.match(quantityControl, /max=\{maximumQuantity\}/)
+  assert.match(quantityControl, /normalizeSelectionQuantity\(quantity, maxQuantity\)/)
 })
 
 test("home, product listing filters, and selection inquiry drawer have mobile-safe contracts", () => {

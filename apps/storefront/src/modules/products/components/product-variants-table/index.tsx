@@ -1,5 +1,9 @@
 import { useSelection } from "@/lib/selection/selection-context"
-import { normalizeQuantity } from "@/lib/selection/quote"
+import {
+  maximumSelectableQuantity,
+  normalizeQuantity,
+  normalizeSelectionQuantity,
+} from "@/lib/selection/quote"
 import { productStyleNumber, variantAvailableQuantity, wholesaleValue } from "@/lib/util/wholesale"
 import { HttpTypes } from "@medusajs/types"
 import { clx, Table } from "@medusajs/ui"
@@ -34,7 +38,7 @@ const ProductVariantsTable = ({
     const availableQuantity = variant?.manage_inventory === false
       ? Number.MAX_SAFE_INTEGER
       : variant ? variantAvailableQuantity(variant) : 0
-    const normalizedQuantity = Math.min(normalizeQuantity(quantity), availableQuantity)
+    const normalizedQuantity = normalizeSelectionQuantity(quantity, availableQuantity)
 
     setQuantities((prev) => {
       const next = new Map(prev)
@@ -51,7 +55,7 @@ const ProductVariantsTable = ({
       const availableQuantity = variant?.manage_inventory === false
         ? Number.MAX_SAFE_INTEGER
         : variant ? variantAvailableQuantity(variant) : 0
-      const normalizedQuantity = Math.min(normalizeQuantity(quantity), availableQuantity)
+      const normalizedQuantity = normalizeSelectionQuantity(quantity, availableQuantity)
       if (!variant || normalizedQuantity === 0) return
       const options = Object.fromEntries((variant.options || []).map((option) => [option.option_id || option.id || "option", option.value || ""]))
       addItem({
@@ -106,7 +110,9 @@ const ProductVariantsTable = ({
                 <div className="min-w-0">
                   <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Available</dt>
                   <dd className="mt-1 font-medium text-zinc-900">
-                    {typeof availableQuantity === "number" ? `${availableQuantity} available` : "Available on request"}
+                    {typeof availableQuantity === "number"
+                      ? `${availableQuantity} available · select up to ${maximumSelectableQuantity(availableQuantity)}`
+                      : "Available on request"}
                   </dd>
                 </div>
               </dl>
@@ -173,7 +179,7 @@ const ProductVariantsTable = ({
                     />
                     {typeof availableQuantity === "number" && (
                       <p className="px-2 pt-1 text-xs text-zinc-500">
-                        {availableQuantity} available
+                        {availableQuantity} available · select up to {maximumSelectableQuantity(availableQuantity)}
                       </p>
                     )}
                   </Table.Cell>

@@ -5,7 +5,10 @@ import {
   createWhatsAppMessage,
   createStoreInquiryPayload,
   isSelectionWithinAvailability,
+  maximumSelectableQuantity,
+  meetsWholesaleOrderMinimum,
   selectionTotals,
+  WHOLESALE_ORDER_MOQ,
 } from "@/lib/selection/quote"
 import { useSelection } from "@/lib/selection/selection-context"
 import { submitInquiryAndOpenWhatsApp } from "@/lib/selection/submit-inquiry"
@@ -27,6 +30,7 @@ export default function SelectionDrawer() {
   const [message, setMessage] = useState("")
   const pathname = usePathname()
   const totals = selectionTotals(items)
+  const meetsOrderMinimum = meetsWholesaleOrderMinimum(items)
   const whatsapp = createWhatsAppLink(
     process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "",
     createWhatsAppMessage({
@@ -37,6 +41,11 @@ export default function SelectionDrawer() {
 
   const sendInquiry = async () => {
     if (!whatsapp || !items.length) return
+
+    if (!meetsOrderMinimum) {
+      setInquiryError("Minimum order quantity is 100 pieces in total. You can mix different styles, colors and sizes.")
+      return
+    }
 
     if (items.some((item) => !item.sku)) {
       setInquiryError("One or more selected variants are missing a SKU. Remove and add them again before sending your inquiry.")
@@ -98,7 +107,7 @@ export default function SelectionDrawer() {
         onClick={() => setOpen(true)}
         className="min-h-11 rounded-full border border-zinc-300 px-3 text-xs font-semibold uppercase tracking-wide hover:border-amber-600"
       >
-        Selection List ({totals.pieces})
+        Selection List ({totals.pieces} / {WHOLESALE_ORDER_MOQ})
       </button>
 
       {open && (
@@ -165,8 +174,9 @@ export default function SelectionDrawer() {
                       <input
                         aria-label={`Quantity for ${item.title}`}
                         className="h-11 w-24 border border-zinc-300 px-2"
-                        min="1"
-                        max={item.availableQuantity}
+                        min="0"
+                        max={item.availableQuantity === undefined ? undefined : maximumSelectableQuantity(item.availableQuantity)}
+                        step="5"
                         type="number"
                         value={item.quantity}
                         onChange={(event) =>
@@ -175,7 +185,7 @@ export default function SelectionDrawer() {
                       />
                       {item.availableQuantity !== undefined && (
                         <span className="text-xs text-zinc-500">
-                          {item.availableQuantity} available
+                          {item.availableQuantity} available · select up to {maximumSelectableQuantity(item.availableQuantity)}
                         </span>
                       )}
                     </div>
@@ -187,8 +197,13 @@ export default function SelectionDrawer() {
             <div className="shrink-0 border-t border-zinc-200 pt-4">
               <div className="mb-4 flex justify-between text-sm">
                 <span>{totals.styles} style(s)</span>
-                <span>{totals.pieces} piece(s)</span>
+                <span>{totals.pieces} / {WHOLESALE_ORDER_MOQ} pieces</span>
               </div>
+              {!meetsOrderMinimum && items.length > 0 && (
+                <p className="mb-4 text-sm text-amber-700">
+                  Minimum order quantity is 100 pieces in total. You can mix different styles, colors and sizes.
+                </p>
+              )}
               <div className="mb-4 grid gap-3 text-sm">
                 <p className="font-semibold text-zinc-950">Your inquiry details</p>
                 <label className="grid gap-1">
@@ -252,12 +267,12 @@ export default function SelectionDrawer() {
               )}
               <button
                 className={`min-h-11 w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
-                  !whatsapp || !items.length || isSubmittingInquiry
+                  !whatsapp || !items.length || !meetsOrderMinimum || isSubmittingInquiry
                     ? "cursor-not-allowed opacity-40"
                     : "hover:bg-amber-700"
                 }`}
                 onClick={() => void sendInquiry()}
-                disabled={!whatsapp || !items.length || isSubmittingInquiry}
+                disabled={!whatsapp || !items.length || !meetsOrderMinimum || isSubmittingInquiry}
               >
                 {isSubmittingInquiry
                   ? "Saving inquiry..."

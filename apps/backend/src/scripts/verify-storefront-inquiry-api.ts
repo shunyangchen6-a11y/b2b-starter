@@ -35,7 +35,7 @@ const createTestPayload = async (container: MedusaContainer) => {
     message: "Please quote Blue S and Blue M together.",
     page_url: `https://storefront.test/dk/products/${product.handle}`,
     total_styles: 1,
-    total_pieces: 5,
+    total_pieces: 100,
     items: [
       {
         title: product.title,
@@ -44,7 +44,7 @@ const createTestPayload = async (container: MedusaContainer) => {
         sku: blueS.sku,
         color: "Blue",
         size: "S",
-        quantity: 2,
+        quantity: 50,
         packSize,
       },
       {
@@ -54,7 +54,7 @@ const createTestPayload = async (container: MedusaContainer) => {
         sku: blueM.sku,
         color: "Blue",
         size: "M",
-        quantity: 3,
+        quantity: 50,
         packSize,
       },
     ],
@@ -125,8 +125,8 @@ export default async function verifyStorefrontInquiryApi({
       },
       body: JSON.stringify({
         ...testPayload,
-        total_pieces: 999999,
-        items: [{ ...testPayload.items[0], quantity: 999999 }],
+        total_pieces: 1000000,
+        items: [{ ...testPayload.items[0], quantity: 1000000 }],
       }),
     })
     if (overstockResponse.status !== 400) {
@@ -189,15 +189,15 @@ export default async function verifyStorefrontInquiryApi({
       selectedItems[0]?.variantId !== testPayload.items[0].variantId ||
       selectedItems[0]?.color !== "Blue" ||
       selectedItems[0]?.size !== "S" ||
-      selectedItems[0]?.quantity !== 2 ||
+      selectedItems[0]?.quantity !== 50 ||
       selectedItems[0]?.packSize !== testPayload.items[0].packSize ||
       selectedItems[1]?.sku !== testPayload.items[1].sku ||
       selectedItems[1]?.variantId !== testPayload.items[1].variantId ||
       selectedItems[1]?.color !== "Blue" ||
       selectedItems[1]?.size !== "M" ||
-      selectedItems[1]?.quantity !== 3 ||
+      selectedItems[1]?.quantity !== 50 ||
       selectedItems[1]?.packSize !== testPayload.items[1].packSize ||
-      detailBody?.inquiry?.total_pieces !== 5
+      detailBody?.inquiry?.total_pieces !== 100
     ) {
       throw new Error(`GET /admin/inquiries/:id failed with ${detailResponse.status}`)
     }

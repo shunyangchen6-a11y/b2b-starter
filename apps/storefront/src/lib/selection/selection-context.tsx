@@ -4,7 +4,7 @@ import {
   applySelectionClearAction,
   ClearSelectionAction,
   mergeSelectionItem,
-  normalizeQuantity,
+  normalizeSelectionQuantity,
   parseStoredSelection,
   SelectionItem,
 } from "./quote"
@@ -50,23 +50,22 @@ export function SelectionProvider({ children }: PropsWithChildren) {
     items,
     addItem: (item) =>
       setItems((current) => mergeSelectionItem(current, item)),
-    updateQuantity: (id, quantity) => {
-      const selectedItem = items.find((item) => item.id === id)
-      const normalizedQuantity = Math.min(
-        normalizeQuantity(quantity),
-        selectedItem?.availableQuantity ?? Number.MAX_SAFE_INTEGER
-      )
+    updateQuantity: (id, quantity) =>
+      setItems((current) => {
+        const selectedItem = current.find((item) => item.id === id)
+        const normalizedQuantity = normalizeSelectionQuantity(
+          quantity,
+          selectedItem?.availableQuantity
+        )
 
-      if (normalizedQuantity === 0) {
-        return
-      }
+        if (normalizedQuantity === 0) {
+          return current.filter((item) => item.id !== id)
+        }
 
-      setItems((current) =>
-        current.map((item) =>
+        return current.map((item) =>
           item.id === id ? { ...item, quantity: normalizedQuantity } : item
         )
-      )
-    },
+      }),
     removeItem: (id) => setItems((current) => current.filter((item) => item.id !== id)),
     clear: (action) =>
       setItems((current) => applySelectionClearAction(current, action)),

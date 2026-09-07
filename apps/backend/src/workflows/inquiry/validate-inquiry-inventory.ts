@@ -1,10 +1,26 @@
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
-import { CreateInquiryType } from "../../api/store/inquiries/validators"
+import {
+  CreateInquiryType,
+  WHOLESALE_ORDER_MOQ,
+  WHOLESALE_VARIANT_MOQ,
+} from "../../api/store/inquiries/validators"
 
 export const validateInquiryInventoryStep = createStep(
   "validate-inquiry-inventory",
   async (input: CreateInquiryType, { container }) => {
+    const calculatedPieces = input.items.reduce((total, item) => total + item.quantity, 0)
+    if (
+      input.total_pieces < WHOLESALE_ORDER_MOQ ||
+      input.total_pieces !== calculatedPieces ||
+      input.items.some((item) => item.quantity < WHOLESALE_VARIANT_MOQ || item.quantity % WHOLESALE_VARIANT_MOQ !== 0)
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "Minimum order quantity is 100 pieces in total and each selected size must be in increments of 5."
+      )
+    }
+
     const productService = container.resolve(Modules.PRODUCT) as any
     const inventoryService = container.resolve(Modules.INVENTORY) as any
     const query = container.resolve(ContainerRegistrationKeys.QUERY) as any

@@ -32,7 +32,7 @@ const selectionItems = [
     sku: "FS-TEST-JOGGER-PANTS-BLK-S",
     color: "Black",
     size: "S",
-    quantity: 2,
+    quantity: 100,
     packSize: 10,
     image: "/images/wholesale-placeholder.svg",
   },
@@ -58,7 +58,7 @@ test("creates a schema-safe payload for a Cloud wholesale test product", () => {
     country: "Nigeria",
     message: "Please quote mixed sizes.",
     total_styles: 1,
-    total_pieces: 2,
+    total_pieces: 100,
     items: [
       {
         title: "Classic Jogger Pants",
@@ -67,7 +67,7 @@ test("creates a schema-safe payload for a Cloud wholesale test product", () => {
         sku: "FS-TEST-JOGGER-PANTS-BLK-S",
         color: "Black",
         size: "S",
-        quantity: 2,
+        quantity: 100,
         packSize: 10,
       },
     ],
@@ -77,8 +77,8 @@ test("creates a schema-safe payload for a Cloud wholesale test product", () => {
 test("keeps two Blue variants as distinct SKU and quantity lines", () => {
   const payload = createStoreInquiryPayload({
     items: [
-      { ...selectionItems[0], variantId: "variant_blue_s", sku: "FS-TEST-CASUAL-PANTS-BLUE-S", color: "Blue", size: "S", quantity: 444 },
-      { ...selectionItems[0], id: "variant_blue_m", variantId: "variant_blue_m", sku: "FS-TEST-CASUAL-PANTS-BLUE-M", color: "Blue", size: "M", quantity: 1111 },
+      { ...selectionItems[0], variantId: "variant_blue_s", sku: "FS-TEST-CASUAL-PANTS-BLUE-S", color: "Blue", size: "S", quantity: 50 },
+      { ...selectionItems[0], id: "variant_blue_m", variantId: "variant_blue_m", sku: "FS-TEST-CASUAL-PANTS-BLUE-M", color: "Blue", size: "M", quantity: 50 },
     ],
     pageUrl: "https://storefront.test/dk/products/fs-test-straight-leg-casual-pants",
     contactName: "Preview Customer",
@@ -86,12 +86,12 @@ test("keeps two Blue variants as distinct SKU and quantity lines", () => {
     country: "Nigeria",
   })
 
-  assert.equal(payload.total_pieces, 1555)
+  assert.equal(payload.total_pieces, 100)
   assert.deepEqual(
     payload.items.map(({ variantId, sku, color, size, quantity }) => ({ variantId, sku, color, size, quantity })),
     [
-      { variantId: "variant_blue_s", sku: "FS-TEST-CASUAL-PANTS-BLUE-S", color: "Blue", size: "S", quantity: 444 },
-      { variantId: "variant_blue_m", sku: "FS-TEST-CASUAL-PANTS-BLUE-M", color: "Blue", size: "M", quantity: 1111 },
+      { variantId: "variant_blue_s", sku: "FS-TEST-CASUAL-PANTS-BLUE-S", color: "Blue", size: "S", quantity: 50 },
+      { variantId: "variant_blue_m", sku: "FS-TEST-CASUAL-PANTS-BLUE-M", color: "Blue", size: "M", quantity: 50 },
     ]
   )
 })
