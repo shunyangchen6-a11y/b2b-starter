@@ -26,13 +26,13 @@ export default async function ProductPreview({
         data-testid="product-wrapper"
         className="relative flex min-w-0 flex-col overflow-hidden rounded-lg bg-white shadow-borders-base transition-shadow duration-150 ease-in-out group-hover:shadow-[0_0_0_3px_rgba(180,132,38,0.35)] w-full"
       >
-        <div className="w-full aspect-[4/5] overflow-hidden">
+        <div className="w-full">
           <Thumbnail
             thumbnail={product.thumbnail}
             images={product.images}
             size="full"
             isFeatured={isFeatured}
-            fit="cover"
+            natural
           />
         </div>
         <div className="flex min-w-0 flex-col gap-4 p-4 txt-compact-medium">

@@ -17,7 +17,7 @@ type ThumbnailProps = {
   isFeatured?: boolean
   className?: string
   type?: "preview" | "full"
-  fit?: "contain" | "cover"
+  natural?: boolean
   "data-testid"?: string
 }
 
@@ -29,17 +29,17 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   className,
   "data-testid": dataTestid,
   type,
-  fit = "contain",
+  natural = false,
 }) => {
   const initialImage = getProductImageUrl(thumbnail || images?.[0]?.url)
 
   return (
     <div
-      className={clx("relative w-full overflow-hidden", className, {
-        "aspect-[4/5]": fit === "cover",
-        "aspect-[11/14]": fit !== "cover" && isFeatured,
-        "aspect-[9/16]": fit !== "cover" && !isFeatured && size !== "square",
-        "aspect-[1/1]": fit !== "cover" && size === "square",
+      className={clx("relative w-full", className, {
+        "overflow-hidden": !natural,
+        "aspect-[11/14]": !natural && isFeatured,
+        "aspect-[9/16]": !natural && !isFeatured && size !== "square",
+        "aspect-[1/1]": !natural && size === "square",
         "w-[180px]": size === "small",
         "w-[290px]": size === "medium",
         "w-[440px]": size === "large",
@@ -47,7 +47,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
       })}
       data-testid={dataTestid}
     >
-      <ImageOrPlaceholder image={initialImage} size={size} type={type} fit={fit} />
+      <ImageOrPlaceholder image={initialImage} size={size} type={type} natural={natural} />
     </div>
   )
 }
@@ -56,8 +56,8 @@ const ImageOrPlaceholder = ({
   image,
   size,
   type,
-  fit = "contain",
-}: Pick<ThumbnailProps, "size" | "type" | "fit"> & {
+  natural = false,
+}: Pick<ThumbnailProps, "size" | "type" | "natural"> & {
   image?: string
 }) => {
   const [imageSource, setImageSource] = useState(getProductImageUrl(image))
@@ -66,15 +66,25 @@ const ImageOrPlaceholder = ({
     setImageSource(getProductImageUrl(image))
   }, [image])
 
+  if (natural) {
+    return (
+      <img
+        src={imageSource}
+        alt="Thumbnail"
+        className="block h-auto w-full object-contain"
+        draggable={false}
+        onError={() => setImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
+      />
+    )
+  }
+
   return (
     <Image
       src={imageSource}
       alt="Thumbnail"
-      className={clx("absolute inset-0 h-full w-full", {
-        "object-cover object-[50%_35%]": fit === "cover",
-        "object-contain": fit !== "cover",
-        "p-4": fit !== "cover" && type === "full",
-        "p-2": fit !== "cover" && type === "preview",
+      className={clx("absolute inset-0 h-full w-full object-contain", {
+        "p-4": type === "full",
+        "p-2": type === "preview",
       })}
       draggable={false}
       quality={50}

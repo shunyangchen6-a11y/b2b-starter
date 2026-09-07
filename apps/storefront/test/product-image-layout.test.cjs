@@ -8,30 +8,29 @@ const source = (...segments) => fs.readFileSync(
   "utf8"
 )
 
-test("product cards use a full-width 4:5 cover image without inset padding", () => {
+test("product cards preserve each uploaded image's natural aspect ratio", () => {
   const preview = source("modules", "products", "components", "product-preview", "index.tsx")
 
-  assert.match(preview, /w-full aspect-\[4\/5\] overflow-hidden/)
+  assert.match(preview, /<div className="w-full">/)
   assert.match(preview, /size="full"/)
-  assert.match(preview, /fit="cover"/)
-  assert.doesNotMatch(preview, /p-10/)
+  assert.match(preview, /natural/)
+  assert.doesNotMatch(preview, /aspect-\[4\/5\]|fit="cover"|p-10/)
 })
 
-test("product detail images use a shared cover focal point", () => {
+test("product detail images preserve their original framing without crop rules", () => {
   const gallery = source("modules", "products", "components", "image-gallery", "index.tsx")
 
-  assert.match(gallery, /aspect-\[4\/5\] w-full overflow-hidden rounded-rounded/)
-  assert.match(gallery, /className="absolute inset-0 h-full w-full object-cover object-\[50%_35%\]"/)
-  assert.match(gallery, /w-12 aspect-\[4\/5\] shrink-0 overflow-hidden rounded-rounded/)
-  assert.match(gallery, /h-full w-full hover:opacity-100 object-cover object-\[50%_35%\]/)
-  assert.doesNotMatch(gallery, /p-20|p-48|object-contain|object-top|translate|scale-/)
+  assert.match(gallery, /<div className="w-full" id=\{selectedImage\.id\}>/)
+  assert.match(gallery, /className="block h-auto w-full object-contain"/)
+  assert.match(gallery, /className="flex w-16 shrink-0 rounded-rounded"/)
+  assert.match(gallery, /block h-auto w-full object-contain hover:opacity-100/)
+  assert.doesNotMatch(gallery, /aspect-\[4\/5\]|object-cover|object-\[|absolute inset-0|p-20|p-48|translate|scale-/)
 })
 
-test("thumbnail cover mode removes contain padding", () => {
+test("natural thumbnails use a full-width auto-height contained image", () => {
   const thumbnail = source("modules", "products", "components", "thumbnail", "index.tsx")
 
-  assert.match(thumbnail, /fit\?: "contain" \| "cover"/)
-  assert.match(thumbnail, /"object-cover object-\[50%_35%\]": fit === "cover"/)
-  assert.match(thumbnail, /"aspect-\[4\/5\]": fit === "cover"/)
-  assert.match(thumbnail, /fit !== "cover" && type === "preview"/)
+  assert.match(thumbnail, /natural\?: boolean/)
+  assert.match(thumbnail, /className="block h-auto w-full object-contain"/)
+  assert.doesNotMatch(thumbnail, /object-cover|object-\[50%_35%\]/)
 })

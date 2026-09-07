@@ -3,7 +3,6 @@
 import { ArrowLeftMini, ArrowRightMini } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import { clx, IconButton } from "@medusajs/ui"
-import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import {
@@ -85,17 +84,11 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
 
   return (
     <div className="flex flex-col justify-end items-center gap-6 w-full h-full">
-      <div
-        className="relative aspect-[4/5] w-full overflow-hidden rounded-rounded"
-        id={selectedImage.id}
-      >
-        <Image
+      <div className="w-full" id={selectedImage.id}>
+        <img
           src={selectedImageSource}
-          priority
-          className="absolute inset-0 h-full w-full object-cover object-[50%_35%]"
+          className="block h-auto w-full object-contain"
           alt={(selectedImage.metadata?.alt as string) || "Wholesale product image"}
-          fill
-          sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 800px"
           onError={() => setSelectedImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
         />
       </div>
@@ -122,18 +115,16 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
           {images.map((image, index) => (
             <li
               key={image.id}
-              className="relative flex w-12 aspect-[4/5] shrink-0 overflow-hidden rounded-rounded"
+              className="flex w-16 shrink-0 rounded-rounded"
               onClick={() => handleImageClick(image)}
               role="button"
             >
-              <Image
+              <img
                 src={getProductImageUrl(image.url)}
                 alt={(image.metadata?.alt as string) || "Wholesale product image"}
-                fill
-                sizes="48px"
                 className={clx(
                   index === selectedImageIndex ? "opacity-100" : "opacity-40",
-                  "h-full w-full hover:opacity-100 object-cover object-[50%_35%]"
+                  "block h-auto w-full object-contain hover:opacity-100"
                 )}
                 onError={(event) => {
                   event.currentTarget.src = WHOLESALE_PLACEHOLDER_IMAGE
