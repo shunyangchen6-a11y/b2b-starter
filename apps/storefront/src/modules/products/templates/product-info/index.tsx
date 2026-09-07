@@ -27,7 +27,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           {product.subtitle}
         </Text>
         <p className="text-sm font-medium text-zinc-800">Contact for Wholesale Price</p>
-        <div className="grid grid-cols-1 gap-2 text-xs text-zinc-600 xsmall:grid-cols-2"><span>Fabric: {wholesaleValue(product.metadata, "fabric")}</span><span>MOQ: {wholesaleValue(product.metadata, "moq", "5")} pcs</span><span>Pack: {wholesaleValue(product.metadata, "pack_size", "5")} pcs</span><span>Category: {product.categories?.[0]?.name || "Men's wholesale"}</span></div>
+        <div className="grid grid-cols-1 gap-2 text-xs text-zinc-600 xsmall:grid-cols-2"><span>MOQ: {wholesaleValue(product.metadata, "moq", "5")} pcs</span><span>Pack: {wholesaleValue(product.metadata, "pack_size", "5")} pcs</span><span>Category: {product.categories?.[0]?.name || "Men's wholesale"}</span></div>
       </div>
     </div>
   )
