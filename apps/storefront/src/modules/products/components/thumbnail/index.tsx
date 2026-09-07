@@ -17,7 +17,7 @@ type ThumbnailProps = {
   isFeatured?: boolean
   className?: string
   type?: "preview" | "full"
-  natural?: boolean
+  framed?: boolean
   "data-testid"?: string
 }
 
@@ -29,17 +29,18 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   className,
   "data-testid": dataTestid,
   type,
-  natural = false,
+  framed = false,
 }) => {
   const initialImage = getProductImageUrl(thumbnail || images?.[0]?.url)
 
   return (
     <div
       className={clx("relative w-full", className, {
-        "overflow-hidden": !natural,
-        "aspect-[11/14]": !natural && isFeatured,
-        "aspect-[9/16]": !natural && !isFeatured && size !== "square",
-        "aspect-[1/1]": !natural && size === "square",
+        "h-full": framed,
+        "overflow-hidden": !framed,
+        "aspect-[11/14]": !framed && isFeatured,
+        "aspect-[9/16]": !framed && !isFeatured && size !== "square",
+        "aspect-[1/1]": !framed && size === "square",
         "w-[180px]": size === "small",
         "w-[290px]": size === "medium",
         "w-[440px]": size === "large",
@@ -47,7 +48,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
       })}
       data-testid={dataTestid}
     >
-      <ImageOrPlaceholder image={initialImage} size={size} type={type} natural={natural} />
+      <ImageOrPlaceholder image={initialImage} size={size} type={type} framed={framed} />
     </div>
   )
 }
@@ -56,8 +57,8 @@ const ImageOrPlaceholder = ({
   image,
   size,
   type,
-  natural = false,
-}: Pick<ThumbnailProps, "size" | "type" | "natural"> & {
+  framed = false,
+}: Pick<ThumbnailProps, "size" | "type" | "framed"> & {
   image?: string
 }) => {
   const [imageSource, setImageSource] = useState(getProductImageUrl(image))
@@ -66,15 +67,30 @@ const ImageOrPlaceholder = ({
     setImageSource(getProductImageUrl(image))
   }, [image])
 
-  if (natural) {
+  if (framed) {
     return (
-      <img
-        src={imageSource}
-        alt="Thumbnail"
-        className="block h-auto w-full object-contain"
-        draggable={false}
-        onError={() => setImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
-      />
+      <>
+        <Image
+          src={imageSource}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full scale-110 object-cover blur-md opacity-40"
+          draggable={false}
+          quality={35}
+          sizes="(max-width: 576px) 50vw, (max-width: 992px) 33vw, 25vw"
+          fill
+        />
+        <Image
+          src={imageSource}
+          alt="Thumbnail"
+          className="absolute inset-0 h-full w-full object-contain object-center"
+          draggable={false}
+          quality={75}
+          sizes="(max-width: 576px) 50vw, (max-width: 992px) 33vw, 25vw"
+          fill
+          onError={() => setImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
+        />
+      </>
     )
   }
 

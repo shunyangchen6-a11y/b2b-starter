@@ -8,29 +8,32 @@ const source = (...segments) => fs.readFileSync(
   "utf8"
 )
 
-test("product cards preserve each uploaded image's natural aspect ratio", () => {
+test("9:16, 2:3, 4:5, and 1:1 product images share a fixed card image height", () => {
   const preview = source("modules", "products", "components", "product-preview", "index.tsx")
 
-  assert.match(preview, /<div className="w-full">/)
+  assert.match(preview, /<div className="relative aspect-\[4\/5\] w-full overflow-hidden">/)
   assert.match(preview, /size="full"/)
-  assert.match(preview, /natural/)
-  assert.doesNotMatch(preview, /aspect-\[4\/5\]|fit="cover"|p-10/)
+  assert.match(preview, /framed/)
+  assert.match(preview, /className="flex min-w-0 flex-col gap-4 p-4 txt-compact-medium"/)
+  assert.match(preview, /min-h-10 line-clamp-2 break-words text-ui-fg-base/)
+  assert.doesNotMatch(preview, /h-auto|fit="cover"|p-10/)
 })
 
-test("product detail images preserve their original framing without crop rules", () => {
+test("product detail foreground contains the original image while the background fills its frame", () => {
   const gallery = source("modules", "products", "components", "image-gallery", "index.tsx")
 
-  assert.match(gallery, /<div className="w-full" id=\{selectedImage\.id\}>/)
-  assert.match(gallery, /className="block h-auto w-full object-contain"/)
-  assert.match(gallery, /className="flex w-16 shrink-0 rounded-rounded"/)
-  assert.match(gallery, /block h-auto w-full object-contain hover:opacity-100/)
-  assert.doesNotMatch(gallery, /aspect-\[4\/5\]|object-cover|object-\[|absolute inset-0|p-20|p-48|translate|scale-/)
+  assert.match(gallery, /relative aspect-\[4\/5\] w-full overflow-hidden rounded-rounded/)
+  assert.match(gallery, /scale-110 object-cover blur-md opacity-40/)
+  assert.match(gallery, /object-contain object-center/)
+  assert.match(gallery, /w-12 aspect-\[4\/5\] shrink-0 overflow-hidden rounded-rounded/)
+  assert.doesNotMatch(gallery, /object-\[|p-20|p-48|translate/)
 })
 
-test("natural thumbnails use a full-width auto-height contained image", () => {
+test("framed card images use a cover background and a contained foreground", () => {
   const thumbnail = source("modules", "products", "components", "thumbnail", "index.tsx")
 
-  assert.match(thumbnail, /natural\?: boolean/)
-  assert.match(thumbnail, /className="block h-auto w-full object-contain"/)
-  assert.doesNotMatch(thumbnail, /object-cover|object-\[50%_35%\]/)
+  assert.match(thumbnail, /framed\?: boolean/)
+  assert.match(thumbnail, /scale-110 object-cover blur-md opacity-40/)
+  assert.match(thumbnail, /object-contain object-center/)
+  assert.doesNotMatch(thumbnail, /object-\[50%_35%\]|h-auto/)
 })
