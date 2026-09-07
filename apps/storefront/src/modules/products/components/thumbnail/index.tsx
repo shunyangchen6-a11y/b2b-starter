@@ -17,6 +17,7 @@ type ThumbnailProps = {
   isFeatured?: boolean
   className?: string
   type?: "preview" | "full"
+  fit?: "contain" | "cover"
   "data-testid"?: string
 }
 
@@ -28,6 +29,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   className,
   "data-testid": dataTestid,
   type,
+  fit = "contain",
 }) => {
   const initialImage = getProductImageUrl(thumbnail || images?.[0]?.url)
 
@@ -44,7 +46,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
       })}
       data-testid={dataTestid}
     >
-      <ImageOrPlaceholder image={initialImage} size={size} type={type} />
+      <ImageOrPlaceholder image={initialImage} size={size} type={type} fit={fit} />
     </div>
   )
 }
@@ -53,7 +55,8 @@ const ImageOrPlaceholder = ({
   image,
   size,
   type,
-}: Pick<ThumbnailProps, "size" | "type"> & {
+  fit = "contain",
+}: Pick<ThumbnailProps, "size" | "type" | "fit"> & {
   image?: string
 }) => {
   const [imageSource, setImageSource] = useState(getProductImageUrl(image))
@@ -66,9 +69,11 @@ const ImageOrPlaceholder = ({
     <Image
       src={imageSource}
       alt="Thumbnail"
-      className={clx("absolute inset-0 object-contain", {
-        "p-4": type === "full",
-        "p-2": type === "preview",
+      className={clx("absolute inset-0", {
+        "object-cover": fit === "cover",
+        "object-contain": fit !== "cover",
+        "p-4": fit !== "cover" && type === "full",
+        "p-2": fit !== "cover" && type === "preview",
       })}
       draggable={false}
       quality={50}

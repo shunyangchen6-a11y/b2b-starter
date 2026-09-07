@@ -24,17 +24,18 @@ export default async function ProductPreview({
     <LocalizedClientLink href={`/products/${product.handle}`} className="group min-w-0">
       <div
         data-testid="product-wrapper"
-        className="relative flex min-w-0 flex-col gap-4 overflow-hidden rounded-lg bg-white p-4 shadow-borders-base transition-shadow duration-150 ease-in-out group-hover:shadow-[0_0_0_3px_rgba(180,132,38,0.35)] aspect-[3/5] w-full"
+        className="relative flex min-w-0 flex-col overflow-hidden rounded-lg bg-white shadow-borders-base transition-shadow duration-150 ease-in-out group-hover:shadow-[0_0_0_3px_rgba(180,132,38,0.35)] w-full"
       >
-        <div className="w-full h-full p-10">
+        <div className="w-full aspect-[4/5] overflow-hidden">
           <Thumbnail
             thumbnail={product.thumbnail}
             images={product.images}
-            size="square"
+            size="full"
             isFeatured={isFeatured}
+            fit="cover"
           />
         </div>
-        <div className="flex min-w-0 flex-col txt-compact-medium">
+        <div className="flex min-w-0 flex-col gap-4 p-4 txt-compact-medium">
           <Text className="text-amber-700 text-xs font-semibold uppercase tracking-wide">Style {productStyleNumber(product)}</Text>
           <Text className="break-words text-ui-fg-base" data-testid="product-title">
             {product.title}

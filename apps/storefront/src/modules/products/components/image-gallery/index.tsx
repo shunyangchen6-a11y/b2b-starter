@@ -84,22 +84,20 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
   }, [handleArrowClick])
 
   return (
-    <div className="flex flex-col justify-end items-center bg-neutral-100 p-8 pt-0 gap-6 w-full h-full">
+    <div className="flex flex-col justify-end items-center gap-6 w-full h-full">
       <div
-        className="relative aspect-[29/34] w-full overflow-hidden"
+        className="relative aspect-[4/5] w-full overflow-hidden rounded-rounded"
         id={selectedImage.id}
       >
-        <div className="flex p-48">
-          <Image
-            src={selectedImageSource}
-            priority
-            className="absolute inset-0 rounded-rounded p-20 overflow-visible object-contain"
-            alt={(selectedImage.metadata?.alt as string) || "Wholesale product image"}
-            fill
-            sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
-            onError={() => setSelectedImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
-          />
-        </div>
+        <Image
+          src={selectedImageSource}
+          priority
+          className="absolute inset-0 object-cover"
+          alt={(selectedImage.metadata?.alt as string) || "Wholesale product image"}
+          fill
+          sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 800px"
+          onError={() => setSelectedImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
+        />
       </div>
       <div className="flex small:flex-row flex-col-reverse gap-y-3 justify-between w-full">
         {images.length > 1 && (
@@ -124,18 +122,18 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
           {images.map((image, index) => (
             <li
               key={image.id}
-              className="flex aspect-[1/1] w-8 h-8 rounded-rounded"
+              className="relative flex w-12 aspect-[4/5] shrink-0 overflow-hidden rounded-rounded"
               onClick={() => handleImageClick(image)}
               role="button"
             >
               <Image
                 src={getProductImageUrl(image.url)}
                 alt={(image.metadata?.alt as string) || "Wholesale product image"}
-                height={32}
-                width={32}
+                fill
+                sizes="48px"
                 className={clx(
                   index === selectedImageIndex ? "opacity-100" : "opacity-40",
-                  "hover:opacity-100 object-contain"
+                  "hover:opacity-100 object-cover"
                 )}
                 onError={(event) => {
                   event.currentTarget.src = WHOLESALE_PLACEHOLDER_IMAGE
