@@ -36,9 +36,10 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   return (
     <div
       className={clx("relative w-full overflow-hidden", className, {
-        "aspect-[11/14]": isFeatured,
-        "aspect-[9/16]": !isFeatured && size !== "square",
-        "aspect-[1/1]": size === "square",
+        "aspect-[4/5]": fit === "cover",
+        "aspect-[11/14]": fit !== "cover" && isFeatured,
+        "aspect-[9/16]": fit !== "cover" && !isFeatured && size !== "square",
+        "aspect-[1/1]": fit !== "cover" && size === "square",
         "w-[180px]": size === "small",
         "w-[290px]": size === "medium",
         "w-[440px]": size === "large",
@@ -69,8 +70,8 @@ const ImageOrPlaceholder = ({
     <Image
       src={imageSource}
       alt="Thumbnail"
-      className={clx("absolute inset-0", {
-        "object-cover": fit === "cover",
+      className={clx("absolute inset-0 h-full w-full", {
+        "object-cover object-[50%_35%]": fit === "cover",
         "object-contain": fit !== "cover",
         "p-4": fit !== "cover" && type === "full",
         "p-2": fit !== "cover" && type === "preview",

@@ -92,7 +92,7 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
         <Image
           src={selectedImageSource}
           priority
-          className="absolute inset-0 object-contain object-center"
+          className="absolute inset-0 h-full w-full object-cover object-[50%_35%]"
           alt={(selectedImage.metadata?.alt as string) || "Wholesale product image"}
           fill
           sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 800px"
@@ -133,7 +133,7 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
                 sizes="48px"
                 className={clx(
                   index === selectedImageIndex ? "opacity-100" : "opacity-40",
-                  "hover:opacity-100 object-cover"
+                  "h-full w-full hover:opacity-100 object-cover object-[50%_35%]"
                 )}
                 onError={(event) => {
                   event.currentTarget.src = WHOLESALE_PLACEHOLDER_IMAGE
