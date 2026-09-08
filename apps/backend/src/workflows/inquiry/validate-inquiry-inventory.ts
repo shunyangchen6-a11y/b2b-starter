@@ -2,8 +2,8 @@ import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
 import {
   CreateInquiryType,
+  isValidInquiryItemQuantity,
   WHOLESALE_ORDER_MOQ,
-  WHOLESALE_VARIANT_MOQ,
 } from "../../api/store/inquiries/validators"
 
 export const validateInquiryInventoryStep = createStep(
@@ -12,12 +12,11 @@ export const validateInquiryInventoryStep = createStep(
     const calculatedPieces = input.items.reduce((total, item) => total + item.quantity, 0)
     if (
       input.total_pieces < WHOLESALE_ORDER_MOQ ||
-      input.total_pieces !== calculatedPieces ||
-      input.items.some((item) => item.quantity < WHOLESALE_VARIANT_MOQ || item.quantity % WHOLESALE_VARIANT_MOQ !== 0)
+      input.total_pieces !== calculatedPieces
     ) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        "Minimum order quantity is 100 pieces in total and each selected size must be in increments of 5."
+        "Minimum order quantity is 100 pieces in total."
       )
     }
 
@@ -97,6 +96,13 @@ export const validateInquiryInventoryStep = createStep(
         throw new MedusaError(
           MedusaError.Types.INVALID_DATA,
           `Only ${availableQuantity} piece(s) are available for SKU ${requested.sku}.`
+        )
+      }
+
+      if (!isValidInquiryItemQuantity(requested.quantity, availableQuantity)) {
+        throw new MedusaError(
+          MedusaError.Types.INVALID_DATA,
+          "Each selected size must be in increments of 5, unless it is the final available quantity for that SKU."
         )
       }
     }

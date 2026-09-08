@@ -22,11 +22,11 @@ export default async function ProductPreview({
 
   return (
     <LocalizedClientLink href={`/products/${product.handle}`} className="group min-w-0">
-      <div
+      <article
         data-testid="product-wrapper"
-        className="relative flex min-w-0 flex-col overflow-hidden rounded-lg bg-white shadow-borders-base transition-shadow duration-150 ease-in-out group-hover:shadow-[0_0_0_3px_rgba(180,132,38,0.35)] w-full"
+        className="relative flex min-w-0 flex-col bg-white w-full"
       >
-        <div className="relative aspect-[4/5] w-full overflow-hidden">
+        <div data-testid="product-image-frame" className="relative aspect-[4/5] w-full overflow-hidden bg-neutral-100">
           <Thumbnail
             thumbnail={product.thumbnail}
             images={product.images}
@@ -35,31 +35,26 @@ export default async function ProductPreview({
             framed
           />
         </div>
-        <div className="flex min-w-0 flex-col gap-4 p-4 txt-compact-medium">
-          <Text className="text-amber-700 text-xs font-semibold uppercase tracking-wide">Style {productStyleNumber(product)}</Text>
-          <Text className="min-h-10 line-clamp-2 break-words text-ui-fg-base" data-testid="product-title">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 border-t border-zinc-100 pt-3 txt-compact-medium">
+          <Text className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Style {productStyleNumber(product)}</Text>
+          <Text className="min-h-10 line-clamp-2 break-words text-sm font-medium leading-5 text-zinc-950" data-testid="product-title">
             {product.title}
           </Text>
-          <Text className="text-sm font-medium">Contact for Wholesale Price</Text>
-          <div className="flex min-w-0 justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-1">
-              <span
-                className={clx({
-                  "text-green-500": stockStatus === "In Stock",
-                  "text-orange-500": stockStatus === "Low Stock",
-                  "text-red-500": stockStatus === "Sold Out",
-                })}
-              >
-                •
-              </span>
-              <Text className="text-neutral-600 text-xs">
-                {stockStatus}
-              </Text>
-            </div>
-            <Text className="text-neutral-500 text-[0.65rem] truncate max-w-[45%]">{sizes?.join(" · ") || "Sizes on request"}</Text>
+          <Text className="text-sm text-zinc-700">Contact for Price</Text>
+          <div className="mt-auto flex min-w-0 items-end justify-between gap-2 pt-1">
+            <Text
+              className={clx("wholesale-status", {
+                "wholesale-status--in-stock": stockStatus === "In Stock",
+                "wholesale-status--low-stock": stockStatus === "Low Stock",
+                "wholesale-status--sold-out": stockStatus === "Sold Out",
+              })}
+            >
+              {stockStatus}
+            </Text>
+            <Text className="max-w-[45%] truncate text-[11px] text-zinc-500">{sizes?.join(" · ") || "Sizes on request"}</Text>
           </div>
         </div>
-      </div>
+      </article>
     </LocalizedClientLink>
   )
 }

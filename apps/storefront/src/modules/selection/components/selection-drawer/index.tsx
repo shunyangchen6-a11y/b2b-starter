@@ -5,7 +5,6 @@ import {
   createWhatsAppMessage,
   createStoreInquiryPayload,
   isSelectionWithinAvailability,
-  maximumSelectableQuantity,
   meetsWholesaleOrderMinimum,
   selectionTotals,
   WHOLESALE_ORDER_MOQ,
@@ -13,6 +12,7 @@ import {
 import { useSelection } from "@/lib/selection/selection-context"
 import { submitInquiryAndOpenWhatsApp } from "@/lib/selection/submit-inquiry"
 import Thumbnail from "@/modules/products/components/thumbnail"
+import BulkTableQuantity from "@/modules/products/components/bulk-table-quantity"
 import { Trash, XMark } from "@medusajs/icons"
 import * as Dialog from "@radix-ui/react-dialog"
 import { usePathname } from "next/navigation"
@@ -31,6 +31,7 @@ export default function SelectionDrawer() {
   const pathname = usePathname()
   const totals = selectionTotals(items)
   const meetsOrderMinimum = meetsWholesaleOrderMinimum(items)
+  const piecesRemaining = Math.max(0, WHOLESALE_ORDER_MOQ - totals.pieces)
   const whatsapp = createWhatsAppLink(
     process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "",
     createWhatsAppMessage({
@@ -53,7 +54,7 @@ export default function SelectionDrawer() {
     }
 
     if (!isSelectionWithinAvailability(items)) {
-      setInquiryError("One or more selected quantities exceed available stock. Update your Selection List and try again.")
+      setInquiryError("One or more selected quantities are not valid for available stock. Use 5-piece increments or select the final available quantity for that SKU.")
       return
     }
 
@@ -105,9 +106,12 @@ export default function SelectionDrawer() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="min-h-11 rounded-full border border-zinc-300 px-3 text-xs font-semibold uppercase tracking-wide hover:border-amber-600"
+        className="min-h-11 whitespace-nowrap border border-zinc-300 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] hover:border-zinc-950 xsmall:px-3 xsmall:tracking-[0.1em]"
       >
-        Selection List ({totals.pieces} / {WHOLESALE_ORDER_MOQ})
+        <span className="small:hidden">Inquiry</span>
+        <span className="hidden small:inline">Inquiry List</span>
+        <span className="small:hidden"> ({totals.pieces})</span>
+        <span className="hidden small:inline"> ({totals.pieces} / {WHOLESALE_ORDER_MOQ})</span>
       </button>
 
       {open && (
@@ -125,10 +129,10 @@ export default function SelectionDrawer() {
           >
             <div className="flex min-w-0 items-center justify-between border-b border-zinc-200 pb-4">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
                   FOUR SEASONS CLOTHING
                 </p>
-                <h2 className="text-xl font-semibold">Selection List</h2>
+                <h2 className="text-xl font-semibold">Inquiry List</h2>
               </div>
               <button aria-label="Close" onClick={() => setOpen(false)} className="ml-3 flex min-h-11 min-w-11 shrink-0 items-center justify-center">
                 <XMark />
@@ -138,7 +142,7 @@ export default function SelectionDrawer() {
             <div className="min-h-0 flex-1 overflow-y-auto py-4">
               {items.length === 0 ? (
                 <p className="text-sm text-zinc-500">
-                  Your selection list is empty. Add styles and quantities to
+                  Your Inquiry List is empty. Add styles and quantities to
                   request a wholesale quote.
                 </p>
               ) : (
@@ -171,21 +175,15 @@ export default function SelectionDrawer() {
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <label className="mr-1 text-xs text-zinc-500">Pieces</label>
-                      <input
-                        aria-label={`Quantity for ${item.title}`}
-                        className="h-11 w-24 border border-zinc-300 px-2"
-                        min="0"
-                        max={item.availableQuantity === undefined ? undefined : maximumSelectableQuantity(item.availableQuantity)}
-                        step="5"
-                        type="number"
+                      <BulkTableQuantity
+                        variantId={item.id}
+                        maxQuantity={item.availableQuantity}
+                        onChange={updateQuantity}
                         value={item.quantity}
-                        onChange={(event) =>
-                          updateQuantity(item.id, Number(event.target.value))
-                        }
                       />
                       {item.availableQuantity !== undefined && (
                         <span className="text-xs text-zinc-500">
-                          {item.availableQuantity} available · select up to {maximumSelectableQuantity(item.availableQuantity)}
+                          {item.availableQuantity} available
                         </span>
                       )}
                     </div>
@@ -200,9 +198,10 @@ export default function SelectionDrawer() {
                 <span>{totals.pieces} / {WHOLESALE_ORDER_MOQ} pieces</span>
               </div>
               {!meetsOrderMinimum && items.length > 0 && (
-                <p className="mb-4 text-sm text-amber-700">
-                  Minimum order quantity is 100 pieces in total. You can mix different styles, colors and sizes.
-                </p>
+                <div className="mb-4 border-l-2 border-[#8A6A38] pl-3 text-sm text-[#6F542C]">
+                  <p>Minimum order quantity is 100 pieces in total. You can mix different styles, colors and sizes.</p>
+                  <p className="mt-1 font-semibold">Add {piecesRemaining} more {piecesRemaining === 1 ? "piece" : "pieces"} to send your inquiry.</p>
+                </div>
               )}
               <div className="mb-4 grid gap-3 text-sm">
                 <p className="font-semibold text-zinc-950">Your inquiry details</p>
@@ -266,10 +265,10 @@ export default function SelectionDrawer() {
                 </p>
               )}
               <button
-                className={`min-h-11 w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
+                  className={`min-h-11 w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
                   !whatsapp || !items.length || !meetsOrderMinimum || isSubmittingInquiry
                     ? "cursor-not-allowed opacity-40"
-                    : "hover:bg-amber-700"
+                    : "hover:bg-zinc-800"
                 }`}
                 onClick={() => void sendInquiry()}
                 disabled={!whatsapp || !items.length || !meetsOrderMinimum || isSubmittingInquiry}
@@ -280,10 +279,10 @@ export default function SelectionDrawer() {
               </button>
               <button
                 onClick={() => setClearConfirmationOpen(true)}
-                className="mt-3 min-h-11 w-full text-xs text-zinc-500 underline"
+                className="mt-3 min-h-11 w-full text-xs text-zinc-500 underline underline-offset-4"
                 disabled={!items.length}
               >
-                Clear selection
+                Clear Inquiry List
               </button>
             </div>
           </aside>
@@ -304,14 +303,14 @@ export default function SelectionDrawer() {
             className="fixed left-1/2 top-1/2 z-[130] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-2xl focus:outline-none"
           >
             <Dialog.Title className="text-lg font-semibold text-zinc-950">
-              Clear selection?
+              Clear Inquiry List?
             </Dialog.Title>
             <Dialog.Description className="mt-3 text-sm text-zinc-600">
               Clear all selected products and quantities?
             </Dialog.Description>
             <Dialog.Close asChild>
               <button
-                aria-label="Close clear selection confirmation"
+                aria-label="Close clear Inquiry List confirmation"
                 className="absolute right-4 top-4 flex min-h-11 min-w-11 items-center justify-center text-zinc-500 hover:text-zinc-950"
               >
                 <XMark />
@@ -325,9 +324,9 @@ export default function SelectionDrawer() {
               </Dialog.Close>
               <button
                 onClick={confirmClear}
-                className="min-h-11 bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                className="min-h-11 bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
               >
-                Clear Selection
+                Clear Inquiry List
               </button>
             </div>
           </Dialog.Content>

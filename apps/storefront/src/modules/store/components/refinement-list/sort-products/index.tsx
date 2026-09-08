@@ -2,7 +2,7 @@
 
 import { ChevronUpDown } from "@medusajs/icons"
 
-export type SortOptions = "price_asc" | "price_desc" | "created_at"
+export type SortOptions = "created_at"
 
 type SortProductsProps = {
   sortBy: SortOptions
@@ -13,15 +13,7 @@ type SortProductsProps = {
 const sortOptions = [
   {
     value: "created_at",
-    label: "Latest Arrivals",
-  },
-  {
-    value: "price_asc",
-    label: "Price: Low -> High",
-  },
-  {
-    value: "price_desc",
-    label: "Price: High -> Low",
+    label: "Newest",
   },
 ]
 

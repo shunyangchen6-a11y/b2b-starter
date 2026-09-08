@@ -4,7 +4,7 @@ import {
   createWhatsAppMessage,
   selectionTotals,
 } from "../../../storefront/src/lib/selection/quote"
-import { CreateInquiry } from "../api/store/inquiries/validators"
+import { CreateInquiry, isValidInquiryItemQuantity } from "../api/store/inquiries/validators"
 
 const items = [
   { id: "one", handle: "jogger-01", title: "Jogger Pants", styleNumber: "FS-JG-01", variantId: "one", sku: "FS-JG-01-BLK-L", color: "Black", size: "L", quantity: 50, packSize: 5 as const },
@@ -83,7 +83,7 @@ describe("wholesale selection inquiry", () => {
     expect(CreateInquiry.safeParse(incompletePayload).success).toBe(false)
   })
 
-  it("rejects requests that bypass the 100-piece and five-piece quantity rules", () => {
+  it("requires the 100-piece minimum while deferring final-stock quantity validation to live inventory", () => {
     const base = {
       page_url: "https://storefront.test/dk/products/fs-test-classic-jogger-pants",
       total_styles: 1,
@@ -102,7 +102,21 @@ describe("wholesale selection inquiry", () => {
     }
 
     expect(CreateInquiry.safeParse({ ...base, total_pieces: 95, items: [{ ...base.items[0], quantity: 95 }] }).success).toBe(false)
-    expect(CreateInquiry.safeParse({ ...base, total_pieces: 100, items: [{ ...base.items[0], quantity: 97 }] }).success).toBe(false)
+    expect(CreateInquiry.safeParse({ ...base, total_pieces: 100, items: [
+      { ...base.items[0], quantity: 97 },
+      { ...base.items[0], variantId: "variant_fs_test_black_m", sku: "FS-TEST-JOGGER-PANTS-BLK-M", size: "M", quantity: 3 },
+    ] }).success).toBe(true)
     expect(CreateInquiry.safeParse({ ...base, total_pieces: 100, items: [{ ...base.items[0], quantity: 100 }] }).success).toBe(true)
+  })
+
+  it("allows only a five-piece increment or the exact final live inventory quantity", () => {
+    expect(isValidInquiryItemQuantity(20, 24)).toBe(true)
+    expect(isValidInquiryItemQuantity(24, 24)).toBe(true)
+    expect(isValidInquiryItemQuantity(21, 24)).toBe(false)
+    expect(isValidInquiryItemQuantity(22, 24)).toBe(false)
+    expect(isValidInquiryItemQuantity(23, 24)).toBe(false)
+    expect(isValidInquiryItemQuantity(25, 24)).toBe(false)
+    expect(isValidInquiryItemQuantity(25, 26)).toBe(true)
+    expect(isValidInquiryItemQuantity(26, 26)).toBe(true)
   })
 })

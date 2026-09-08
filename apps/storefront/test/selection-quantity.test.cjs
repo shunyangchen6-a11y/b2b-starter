@@ -19,7 +19,11 @@ require.extensions[".ts"] = (module, filename) => {
 
 const {
   applySelectionClearAction,
+  decreaseSelectionQuantity,
+  createStoreInquiryPayload,
+  increaseSelectionQuantity,
   isValidSelectionQuantity,
+  isSelectionWithinAvailability,
   maximumSelectableQuantity,
   mergeSelectionItem,
   normalizeQuantity,
@@ -124,10 +128,60 @@ test("keeps normalized totals after a localStorage refresh", () => {
   assert.equal(selectionTotals(refreshed).pieces, 45)
 })
 
-test("floors a 141-piece inventory limit to 140 selectable pieces", () => {
-  assert.equal(maximumSelectableQuantity(141), 140)
-  assert.equal(normalizeSelectionQuantity(141, 141), 140)
-  assert.equal(normalizeSelectionQuantity(145, 141), 140)
+test("keeps the full real inventory available when it has a non-five-piece remainder", () => {
+  assert.equal(maximumSelectableQuantity(24), 24)
+  assert.equal(normalizeSelectionQuantity(24, 24), 24)
+  assert.equal(normalizeSelectionQuantity(25, 24), 24)
+  assert.equal(isValidSelectionQuantity(24, 24), true)
+  assert.equal(isValidSelectionQuantity(21, 24), false)
+  assert.equal(isValidSelectionQuantity(22, 24), false)
+  assert.equal(isValidSelectionQuantity(23, 24), false)
+  assert.equal(isValidSelectionQuantity(25, 24), false)
+})
+
+test("uses the final real inventory as the last increment without permitting oversell", () => {
+  const stockTwentyFourSteps = [0]
+  while (stockTwentyFourSteps.at(-1) < 24) {
+    stockTwentyFourSteps.push(increaseSelectionQuantity(stockTwentyFourSteps.at(-1), 24))
+  }
+
+  assert.deepEqual(stockTwentyFourSteps, [0, 5, 10, 15, 20, 24])
+  assert.equal(increaseSelectionQuantity(20, 24), 24)
+  assert.equal(decreaseSelectionQuantity(24, 24), 20)
+  assert.equal(increaseSelectionQuantity(24, 24), 24)
+
+  assert.equal(increaseSelectionQuantity(25, 26), 26)
+  assert.equal(decreaseSelectionQuantity(26, 26), 25)
+  assert.equal(increaseSelectionQuantity(26, 26), 26)
+
+  assert.equal(increaseSelectionQuantity(15, 20), 20)
+  assert.equal(decreaseSelectionQuantity(20, 20), 15)
+  assert.equal(increaseSelectionQuantity(20, 20), 20)
+})
+
+test("restores a valid final-stock quantity from localStorage without accepting invalid tail values", () => {
+  const restored = parseStoredSelection(JSON.stringify([
+    { ...item("sku-black-s", 24), availableQuantity: 24 },
+    { ...item("sku-black-m", 21), availableQuantity: 24 },
+  ]))
+
+  assert.deepEqual(restored.map((selectionItem) => selectionItem.quantity), [24, 20])
+
+  const payload = createStoreInquiryPayload({
+    items: [restored[0]],
+    pageUrl: "https://example.com/dk/products/classic-jogger-pants",
+    contactName: "Preview buyer",
+    whatsapp: "0000000000",
+    country: "Kenya",
+  })
+
+  assert.equal(payload.items[0].quantity, 24)
+})
+
+test("keeps front-end inquiry validation aligned with final-stock quantity rules", () => {
+  assert.equal(isSelectionWithinAvailability([{ ...item("sku-black-s", 24), availableQuantity: 24 }]), true)
+  assert.equal(isSelectionWithinAvailability([{ ...item("sku-black-s", 21), availableQuantity: 24 }]), false)
+  assert.equal(isSelectionWithinAvailability([{ ...item("sku-black-s", 25), availableQuantity: 24 }]), false)
 })
 
 test("requires 100 mixed pieces across the whole Selection List", () => {

@@ -53,7 +53,16 @@ export const normalizeQuantity = (value: unknown) => {
 }
 
 export const maximumSelectableQuantity = (availableQuantity: unknown) =>
-  Math.floor(normalizeQuantity(availableQuantity) / WHOLESALE_VARIANT_MOQ) * WHOLESALE_VARIANT_MOQ
+  normalizeQuantity(availableQuantity)
+
+const isNonNegativeSafeInteger = (value: unknown) => {
+  if (typeof value === "string" && value.trim() === "") return false
+  const quantity = typeof value === "number" || typeof value === "string"
+    ? Number(value)
+    : Number.NaN
+
+  return Number.isSafeInteger(quantity) && quantity >= 0
+}
 
 export const normalizeSelectionQuantity = (
   value: unknown,
@@ -64,15 +73,68 @@ export const normalizeSelectionQuantity = (
     ? quantity
     : Math.min(quantity, maximumSelectableQuantity(availableQuantity))
 
+  if (
+    typeof availableQuantity !== "undefined" &&
+    cappedQuantity === maximumSelectableQuantity(availableQuantity)
+  ) {
+    return cappedQuantity
+  }
+
   return Math.floor(cappedQuantity / WHOLESALE_VARIANT_MOQ) * WHOLESALE_VARIANT_MOQ
 }
 
-export const isValidSelectionQuantity = (value: unknown) => {
+export const isValidSelectionQuantity = (
+  value: unknown,
+  availableQuantity?: unknown
+) => {
+  if (!isNonNegativeSafeInteger(value)) return false
+
   const quantity = normalizeQuantity(value)
-  return quantity === 0 || (
+  const maximumQuantity = typeof availableQuantity === "undefined"
+    ? undefined
+    : maximumSelectableQuantity(availableQuantity)
+
+  if (quantity === 0) return true
+  if (maximumQuantity !== undefined && quantity > maximumQuantity) return false
+  if (maximumQuantity !== undefined && quantity === maximumQuantity) return true
+
+  return (
     quantity >= WHOLESALE_VARIANT_MOQ &&
     quantity % WHOLESALE_VARIANT_MOQ === 0
   )
+}
+
+export const increaseSelectionQuantity = (
+  value: unknown,
+  availableQuantity?: unknown
+) => {
+  const quantity = normalizeSelectionQuantity(value, availableQuantity)
+  if (typeof availableQuantity === "undefined") {
+    return quantity + WHOLESALE_VARIANT_MOQ
+  }
+
+  const maximumQuantity = maximumSelectableQuantity(availableQuantity)
+  if (quantity >= maximumQuantity) return maximumQuantity
+
+  const nextQuantity = quantity + WHOLESALE_VARIANT_MOQ
+  return nextQuantity <= maximumQuantity ? nextQuantity : maximumQuantity
+}
+
+export const decreaseSelectionQuantity = (
+  value: unknown,
+  availableQuantity?: unknown
+) => {
+  const quantity = normalizeSelectionQuantity(value, availableQuantity)
+  if (quantity === 0) return 0
+
+  if (typeof availableQuantity !== "undefined") {
+    const maximumQuantity = maximumSelectableQuantity(availableQuantity)
+    if (quantity === maximumQuantity && maximumQuantity % WHOLESALE_VARIANT_MOQ !== 0) {
+      return Math.floor(maximumQuantity / WHOLESALE_VARIANT_MOQ) * WHOLESALE_VARIANT_MOQ
+    }
+  }
+
+  return Math.max(quantity - WHOLESALE_VARIANT_MOQ, 0)
 }
 
 const stringValue = (value: unknown) =>
@@ -199,9 +261,7 @@ export const meetsWholesaleOrderMinimum = (items: SelectionItem[]) =>
 export const isSelectionWithinAvailability = (items: SelectionItem[]) =>
   items.every(
     (item) =>
-      item.availableQuantity === undefined ||
-      normalizeQuantity(item.quantity) <=
-        maximumSelectableQuantity(item.availableQuantity)
+      isValidSelectionQuantity(item.quantity, item.availableQuantity)
   )
 
 export const createStoreInquiryPayload = ({
@@ -262,7 +322,7 @@ export const createWhatsAppMessage = ({
   return [
     "Hello FOUR SEASONS CLOTHING, I would like a wholesale quotation.",
     "",
-    "Selection List:",
+    "Inquiry List:",
     ...lines,
     "",
     `Total styles: ${totals.styles}`,

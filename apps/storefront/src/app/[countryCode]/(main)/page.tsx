@@ -6,7 +6,7 @@ import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "FOUR SEASONS CLOTHING | Menswear Wholesale",
-  description: "Ready-stock men's clothing wholesale. Build a selection list and request a WhatsApp quote.",
+  description: "Ready-stock men's clothing wholesale. Build an inquiry list and request a WhatsApp quote.",
 }
 
 export default async function Home(props: {

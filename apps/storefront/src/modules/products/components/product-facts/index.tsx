@@ -24,12 +24,12 @@ const ProductFacts = ({ product }: { product: HttpTypes.StoreProduct }) => {
     <div className="flex flex-col gap-y-2 w-full">
       {hasManageInventory && (stockStatus === "In Stock" ? (
         <span className="flex items-center gap-x-2 text-neutral-600 text-sm">
-          <CheckCircleSolid className="text-green-500" /> Can be shipped
+          <CheckCircleSolid className="text-emerald-700" /> Can be shipped
           Ready Stock · Contact us for real-time quantity
         </span>
       ) : (
         <span className="flex items-center gap-x-2 text-neutral-600 text-sm ">
-          <ExclamationCircleSolid className="text-orange-500" />
+          <ExclamationCircleSolid className="text-[#8A6A38]" />
           {stockStatus === "Sold Out" ? "Sold Out · Ask for similar styles" : "Low Stock · Contact us before ordering"}
         </span>
       ))}
@@ -41,7 +41,7 @@ const ProductFacts = ({ product }: { product: HttpTypes.StoreProduct }) => {
           </>
         )}
       </span>
-      {wholesaleValue(product.metadata, "video_url", "") !== "" && <a className="text-sm text-amber-700 underline" href={wholesaleValue(product.metadata, "video_url", "")} target="_blank" rel="noreferrer">Watch product video</a>}
+      {wholesaleValue(product.metadata, "video_url", "") !== "" && <a className="text-sm text-zinc-950 underline underline-offset-4" href={wholesaleValue(product.metadata, "video_url", "")} target="_blank" rel="noreferrer">Watch product video</a>}
     </div>
   )
 }

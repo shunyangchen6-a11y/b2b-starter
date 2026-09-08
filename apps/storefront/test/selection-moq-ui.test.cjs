@@ -8,14 +8,16 @@ const source = (file) => fs.readFileSync(
   "utf8"
 )
 
-test("variant and Selection List inputs use five-piece increments", () => {
+test("variant and Inquiry List inputs use five-piece increments with a final-stock exception", () => {
   const variantControl = source(["modules", "products", "components", "bulk-table-quantity", "index.tsx"])
   const drawer = source(["modules", "selection", "components", "selection-drawer", "index.tsx"])
 
-  assert.match(variantControl, /normalizeQuantity\(quantity\) \+ 5/)
-  assert.match(variantControl, /step="5"/)
-  assert.match(drawer, /step="5"/)
-  assert.match(drawer, /maximumSelectableQuantity\(item\.availableQuantity\)/)
+  assert.match(variantControl, /increaseSelectionQuantity/)
+  assert.match(variantControl, /decreaseSelectionQuantity/)
+  assert.match(variantControl, /isValidSelectionQuantity/)
+  assert.match(variantControl, /or all \$\{maximumQuantity\} available pieces/)
+  assert.match(drawer, /BulkTableQuantity/)
+  assert.match(drawer, /\{item\.availableQuantity\} available/)
 })
 
 test("Selection List blocks WhatsApp submission until the global 100-piece MOQ", () => {
@@ -24,4 +26,6 @@ test("Selection List blocks WhatsApp submission until the global 100-piece MOQ",
   assert.match(drawer, /\{totals\.pieces\} \/ \{WHOLESALE_ORDER_MOQ\} pieces/)
   assert.match(drawer, /Minimum order quantity is 100 pieces in total\. You can mix different styles, colors and sizes\./)
   assert.match(drawer, /!meetsOrderMinimum/)
+  assert.match(drawer, /WHOLESALE_ORDER_MOQ - totals\.pieces/)
+  assert.match(drawer, /Add \{piecesRemaining\} more/)
 })

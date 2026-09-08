@@ -1,6 +1,5 @@
 import { useSelection } from "@/lib/selection/selection-context"
 import {
-  maximumSelectableQuantity,
   normalizeQuantity,
   normalizeSelectionQuantity,
 } from "@/lib/selection/quote"
@@ -104,14 +103,14 @@ const ProductVariantsTable = ({
                   <dd className="mt-1 break-words text-zinc-900">{optionValue(variant, "Size")}</dd>
                 </div>
                 <div className="min-w-0">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Wholesale price</dt>
-                  <dd className="mt-1 text-zinc-900">Contact for Wholesale Price</dd>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Price</dt>
+                  <dd className="mt-1 text-zinc-900">Contact for Price</dd>
                 </div>
                 <div className="min-w-0">
                   <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Available</dt>
                   <dd className="mt-1 font-medium text-zinc-900">
                     {typeof availableQuantity === "number"
-                      ? `${availableQuantity} available · select up to ${maximumSelectableQuantity(availableQuantity)}`
+                      ? `${availableQuantity} available`
                       : "Available on request"}
                   </dd>
                 </div>
@@ -143,7 +142,7 @@ const ProductVariantsTable = ({
                   </Table.HeaderCell>
                 )
               })}
-              <Table.HeaderCell className="px-4 border-x">Wholesale price</Table.HeaderCell>
+              <Table.HeaderCell className="px-4 border-x">Price</Table.HeaderCell>
               <Table.HeaderCell className="px-4">Pieces</Table.HeaderCell>
             </Table.Row>
           </Table.Header>
@@ -170,7 +169,7 @@ const ProductVariantsTable = ({
                       </Table.Cell>
                     )
                   })}
-                  <Table.Cell className="px-4 border-x text-xs text-zinc-500">Contact for Wholesale Price</Table.Cell>
+                  <Table.Cell className="px-4 border-x text-xs text-zinc-500">Contact for Price</Table.Cell>
                   <Table.Cell className="pl-1 !pr-1">
                     <BulkTableQuantity
                       variantId={variant.id}
@@ -178,9 +177,7 @@ const ProductVariantsTable = ({
                       onChange={handleQuantityChange}
                     />
                     {typeof availableQuantity === "number" && (
-                      <p className="px-2 pt-1 text-xs text-zinc-500">
-                        {availableQuantity} available · select up to {maximumSelectableQuantity(availableQuantity)}
-                      </p>
+                      <p className="px-2 pt-1 text-xs text-zinc-500">{availableQuantity} available</p>
                     )}
                   </Table.Cell>
                 </Table.Row>
@@ -198,7 +195,7 @@ const ProductVariantsTable = ({
       >
         {totalQuantity === 0
           ? "Choose product variant(s) above"
-          : "Add to Selection List"}
+          : "Add to Inquiry List"}
       </Button>
     </div>
   )

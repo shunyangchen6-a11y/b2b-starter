@@ -11,7 +11,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   return (
     <div id="product-info" className="min-w-0">
       <div className="flex flex-col gap-y-4 w-full">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Style No. {productStyleNumber(product)}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Style No. {productStyleNumber(product)}</p>
         <Heading
           level="h1"
           className="break-words text-3xl leading-tight text-ui-fg-base md:text-[2.5rem] md:leading-10"
@@ -26,7 +26,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         >
           {product.subtitle}
         </Text>
-        <p className="text-sm font-medium text-zinc-800">Contact for Wholesale Price</p>
+        <p className="text-sm font-medium text-zinc-800">Contact for Price</p>
         <div className="grid grid-cols-1 gap-2 text-xs text-zinc-600 xsmall:grid-cols-2"><span>MOQ: {wholesaleValue(product.metadata, "moq", "5")} pcs</span><span>Pack: {wholesaleValue(product.metadata, "pack_size", "5")} pcs</span><span>Category: {product.categories?.[0]?.name || "Men's wholesale"}</span></div>
       </div>
     </div>

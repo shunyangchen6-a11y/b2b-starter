@@ -3,6 +3,20 @@ import { z } from "@medusajs/framework/zod"
 export const WHOLESALE_VARIANT_MOQ = 5
 export const WHOLESALE_ORDER_MOQ = 100
 
+export const isValidInquiryItemQuantity = (
+  quantity: number,
+  availableQuantity: number
+) => {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0 || quantity > availableQuantity) {
+    return false
+  }
+
+  return quantity === availableQuantity || (
+    quantity >= WHOLESALE_VARIANT_MOQ &&
+    quantity % WHOLESALE_VARIANT_MOQ === 0
+  )
+}
+
 export const CreateInquiry = z.object({
   contact_name: z.string().trim().min(1).max(120),
   whatsapp: z.string().trim().min(6).max(40),
@@ -18,10 +32,7 @@ export const CreateInquiry = z.object({
     sku: z.string().min(1).max(120),
     color: z.string().min(1).max(120),
     size: z.string().min(1).max(120),
-    quantity: z.number().int().min(WHOLESALE_VARIANT_MOQ).refine(
-      (quantity) => quantity % WHOLESALE_VARIANT_MOQ === 0,
-      "Each selected size quantity must be a multiple of 5."
-    ),
+    quantity: z.number().int().positive(),
     packSize: z.union([z.literal(5), z.literal(10)]),
   }).strict()).min(1).max(100),
 }).strict().superRefine((inquiry, context) => {
