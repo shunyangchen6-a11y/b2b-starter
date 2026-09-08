@@ -11,29 +11,29 @@ const source = (...segments) => fs.readFileSync(
 test("9:16, 2:3, 4:5, and 1:1 product images share a fixed card image height", () => {
   const preview = source("modules", "products", "components", "product-preview", "index.tsx")
 
-  assert.match(preview, /<div className="relative aspect-\[4\/5\] w-full overflow-hidden">/)
+  assert.match(preview, /data-testid="product-image-frame" className="relative aspect-\[4\/5\] w-full overflow-hidden bg-neutral-100"/)
   assert.match(preview, /size="full"/)
   assert.match(preview, /framed/)
-  assert.match(preview, /className="flex min-w-0 flex-col gap-4 p-4 txt-compact-medium"/)
-  assert.match(preview, /min-h-10 line-clamp-2 break-words text-ui-fg-base/)
+  assert.match(preview, /className="flex min-w-0 flex-1 flex-col gap-2 border-t border-zinc-100 pt-3 txt-compact-medium"/)
+  assert.match(preview, /min-h-10 line-clamp-2 break-words text-sm font-medium leading-5 text-zinc-950/)
   assert.doesNotMatch(preview, /h-auto|fit="cover"|p-10/)
 })
 
-test("product detail foreground contains the original image while the background fills its frame", () => {
+test("product detail images center the complete original inside a light-gray 4:5 frame", () => {
   const gallery = source("modules", "products", "components", "image-gallery", "index.tsx")
 
   assert.match(gallery, /relative aspect-\[4\/5\] w-full overflow-hidden rounded-rounded/)
-  assert.match(gallery, /scale-110 object-cover blur-md opacity-40/)
+  assert.match(gallery, /<div aria-hidden className="absolute inset-0 bg-neutral-100"\s*\/>/)
   assert.match(gallery, /object-contain object-center/)
   assert.match(gallery, /w-12 aspect-\[4\/5\] shrink-0 overflow-hidden rounded-rounded/)
-  assert.doesNotMatch(gallery, /object-\[|p-20|p-48|translate/)
+  assert.doesNotMatch(gallery, /object-cover|blur-|scale-|object-\[|p-20|p-48|translate/)
 })
 
-test("framed card images use a cover background and a contained foreground", () => {
+test("framed card images use a light-gray background and a contained foreground", () => {
   const thumbnail = source("modules", "products", "components", "thumbnail", "index.tsx")
 
   assert.match(thumbnail, /framed\?: boolean/)
-  assert.match(thumbnail, /scale-110 object-cover blur-md opacity-40/)
+  assert.match(thumbnail, /<div aria-hidden className="absolute inset-0 bg-neutral-100"\s*\/>/)
   assert.match(thumbnail, /object-contain object-center/)
-  assert.doesNotMatch(thumbnail, /object-\[50%_35%\]|h-auto/)
+  assert.doesNotMatch(thumbnail, /object-cover|blur-|scale-|object-\[50%_35%\]|h-auto/)
 })

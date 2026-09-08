@@ -21,13 +21,13 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         </Heading>
 
         <Text
-          className="text-2xl text-ui-fg-subtle whitespace-pre-line"
+          className="break-words text-2xl text-ui-fg-subtle whitespace-pre-line"
           data-testid="product-description"
         >
           {product.subtitle}
         </Text>
         <p className="text-sm font-medium text-zinc-800">Contact for Price</p>
-        <div className="grid grid-cols-1 gap-2 text-xs text-zinc-600 xsmall:grid-cols-2"><span>MOQ: {wholesaleValue(product.metadata, "moq", "5")} pcs</span><span>Pack: {wholesaleValue(product.metadata, "pack_size", "5")} pcs</span><span>Category: {product.categories?.[0]?.name || "Men's wholesale"}</span></div>
+        <div className="grid grid-cols-1 gap-2 text-xs text-zinc-600 xsmall:grid-cols-2"><span className="min-w-0 break-words">MOQ: {wholesaleValue(product.metadata, "moq", "5")} pcs</span><span className="min-w-0 break-words">Pack: {wholesaleValue(product.metadata, "pack_size", "5")} pcs</span><span className="min-w-0 break-words">Category: {product.categories?.[0]?.name || "Men's wholesale"}</span></div>
       </div>
     </div>
   )

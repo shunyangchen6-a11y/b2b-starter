@@ -16,11 +16,16 @@
   html {
     background: var(--fs-canvas);
     color: var(--fs-ink);
+    max-width: 100%;
+    overflow-x: clip;
     scroll-behavior: smooth;
   }
 
   body {
-    min-width: 320px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
     background: var(--fs-canvas);
     color: var(--fs-ink);
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -91,7 +96,7 @@
 
 @layer components {
   .content-container {
-    @apply mx-auto w-full max-w-[1440px] px-4 small:px-6 large:px-8;
+    @apply mx-auto w-full min-w-0 max-w-full px-4 small:px-6 large:max-w-[1440px] large:px-8;
   }
 
   .contrast-btn {

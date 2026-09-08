@@ -49,8 +49,8 @@ export function NavigationHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white text-zinc-950">
-        <div className="content-container relative flex h-16 items-center justify-between medium:h-[76px]">
-          <div className="flex items-center medium:hidden">
+        <div className="content-container grid h-16 grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-1 medium:flex medium:h-[76px] medium:justify-between">
+          <div className="flex min-w-0 items-center medium:hidden">
             <button
               type="button"
               aria-expanded={menuOpen}
@@ -63,13 +63,13 @@ export function NavigationHeader() {
           </div>
 
           <LocalizedClientLink
-            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-zinc-950 medium:static medium:translate-x-0 medium:translate-y-0"
+            className="flex min-w-0 flex-col items-center justify-self-center whitespace-nowrap text-zinc-950 medium:justify-self-auto"
             href="/"
           >
-            <span className="font-sans text-[21px] font-semibold leading-none tracking-[0.08em] xsmall:text-[24px] medium:text-[26px]">
+            <span className="font-sans text-[19px] font-semibold leading-none tracking-[0.08em] xsmall:text-[21px] medium:text-[26px]">
               四季服饰
             </span>
-            <span className="mt-1 hidden text-[7px] font-semibold uppercase leading-none tracking-[0.22em] text-zinc-600 xsmall:block medium:text-[8px]">
+            <span className="mt-1 hidden text-[7px] font-semibold uppercase leading-none tracking-[0.22em] text-zinc-600 small:block medium:text-[8px]">
               FOUR SEASONS CLOTHING
             </span>
           </LocalizedClientLink>
@@ -86,7 +86,7 @@ export function NavigationHeader() {
             </ul>
           </nav>
 
-          <div className="flex shrink-0 items-center justify-end gap-1 small:gap-3">
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 small:gap-3">
             <LocalizedClientLink
               href="/store"
               aria-label="Search products"

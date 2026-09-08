@@ -106,12 +106,10 @@ export default function SelectionDrawer() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="min-h-11 whitespace-nowrap border border-zinc-300 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] hover:border-zinc-950 xsmall:px-3 xsmall:tracking-[0.1em]"
+        className="min-h-11 shrink-0 whitespace-nowrap border border-zinc-300 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] hover:border-zinc-950 xsmall:px-3 xsmall:tracking-[0.1em]"
       >
-        <span className="small:hidden">Inquiry</span>
-        <span className="hidden small:inline">Inquiry List</span>
-        <span className="small:hidden"> ({totals.pieces})</span>
-        <span className="hidden small:inline"> ({totals.pieces} / {WHOLESALE_ORDER_MOQ})</span>
+        <span className="md:hidden">List ({totals.pieces})</span>
+        <span className="hidden md:inline">Inquiry List ({totals.pieces} / {WHOLESALE_ORDER_MOQ})</span>
       </button>
 
       {open && (
@@ -124,7 +122,7 @@ export default function SelectionDrawer() {
           }}
         >
           <aside
-            className="ml-auto flex h-full w-full max-w-md flex-col bg-white p-4 xsmall:p-5 shadow-2xl"
+            className="ml-auto flex h-full w-full min-w-0 max-w-md flex-col overflow-x-hidden bg-white p-4 xsmall:p-5 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex min-w-0 items-center justify-between border-b border-zinc-200 pb-4">

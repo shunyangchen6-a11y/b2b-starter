@@ -17,9 +17,14 @@ export default async function Home(props: {
   const { countryCode } = params
 
   return (
-    <div className="flex flex-col gap-y-8 m-2">
+    <div className="my-2 flex w-full min-w-0 max-w-full flex-col gap-y-8 overflow-x-clip">
       <Hero />
-      <section className="content-container grid grid-cols-2 gap-2 small:grid-cols-4 text-center"><div className="border border-zinc-200 p-4"><p className="font-semibold">Wholesale</p><p className="text-xs text-zinc-500">Contact for quotation</p></div><div className="border border-zinc-200 p-4"><p className="font-semibold">Ready Stock</p><p className="text-xs text-zinc-500">Live confirmation on WhatsApp</p></div><div className="border border-zinc-200 p-4"><p className="font-semibold">Mixed Styles</p><p className="text-xs text-zinc-500">Build your own selection</p></div><div className="border border-zinc-200 p-4"><p className="font-semibold">Fast Shipping</p><p className="text-xs text-zinc-500">Freight quote on request</p></div></section>
+      <section className="content-container grid w-full min-w-0 max-w-full grid-cols-2 gap-2 text-center md:grid-cols-4">
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Wholesale</p><p className="break-words text-xs text-zinc-500">Contact for quotation</p></div>
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Ready Stock</p><p className="break-words text-xs text-zinc-500">Live confirmation on WhatsApp</p></div>
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Mixed Styles</p><p className="break-words text-xs text-zinc-500">Build your own selection</p></div>
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Fast Shipping</p><p className="break-words text-xs text-zinc-500">Freight quote on request</p></div>
+      </section>
       <section id="latest-arrivals"><Suspense fallback={<SkeletonFeaturedProducts />}><FeaturedProducts countryCode={countryCode} /></Suspense></section>
     </div>
   )

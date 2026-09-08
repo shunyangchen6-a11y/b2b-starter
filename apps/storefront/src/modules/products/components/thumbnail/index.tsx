@@ -70,16 +70,7 @@ const ImageOrPlaceholder = ({
   if (framed) {
     return (
       <>
-        <Image
-          src={imageSource}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 h-full w-full scale-110 object-cover blur-md opacity-40"
-          draggable={false}
-          quality={35}
-          sizes="(max-width: 576px) 50vw, (max-width: 992px) 33vw, 25vw"
-          fill
-        />
+        <div aria-hidden className="absolute inset-0 bg-neutral-100" />
         <Image
           src={imageSource}
           alt="Thumbnail"

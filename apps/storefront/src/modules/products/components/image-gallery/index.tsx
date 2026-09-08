@@ -84,17 +84,9 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
   }, [handleArrowClick])
 
   return (
-    <div className="flex flex-col justify-end items-center gap-6 w-full h-full">
+    <div className="flex h-full w-full min-w-0 max-w-full flex-col items-center justify-end gap-6">
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-rounded" id={selectedImage.id}>
-        <Image
-          src={selectedImageSource}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 h-full w-full scale-110 object-cover blur-md opacity-40"
-          fill
-          quality={35}
-          sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 800px"
-        />
+        <div aria-hidden className="absolute inset-0 bg-neutral-100" />
         <Image
           src={selectedImageSource}
           priority
@@ -106,7 +98,7 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
           onError={() => setSelectedImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
         />
       </div>
-      <div className="flex small:flex-row flex-col-reverse gap-y-3 justify-between w-full">
+      <div className="flex w-full min-w-0 max-w-full flex-col-reverse justify-between gap-y-3 small:flex-row">
         {images.length > 1 && (
           <div className="flex flex-row gap-x-2 self-end small:self-auto">
             <IconButton
@@ -125,7 +117,7 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
             </IconButton>
           </div>
         )}
-        <ul className="flex flex-row gap-x-4 overflow-x-auto">
+        <ul className="flex min-w-0 max-w-full flex-row gap-x-4 overflow-x-auto">
           {images.map((image, index) => (
             <li
               key={image.id}
@@ -133,15 +125,7 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
               onClick={() => handleImageClick(image)}
               role="button"
             >
-              <Image
-                src={getProductImageUrl(image.url)}
-                alt=""
-                aria-hidden
-                fill
-                quality={30}
-                sizes="48px"
-                className="absolute inset-0 h-full w-full scale-110 object-cover blur-sm opacity-40"
-              />
+              <div aria-hidden className="absolute inset-0 bg-neutral-100" />
               <Image
                 src={getProductImageUrl(image.url)}
                 alt={(image.metadata?.alt as string) || "Wholesale product image"}

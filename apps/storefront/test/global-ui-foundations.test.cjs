@@ -13,7 +13,7 @@ test("global wholesale visual tokens keep the storefront monochrome and spacious
 
   assert.match(styles, /--fs-ink: #111111/)
   assert.match(styles, /--fs-surface: #f4f4f2/)
-  assert.match(styles, /max-w-\[1440px\] px-4 small:px-6 large:px-8/)
+  assert.match(styles, /w-full min-w-0 max-w-full px-4 small:px-6 large:max-w-\[1440px\] large:px-8/)
   assert.match(styles, /\.wholesale-button/)
   assert.match(styles, /\.wholesale-input/)
   assert.match(styles, /\.wholesale-status--in-stock/)
@@ -38,8 +38,9 @@ test("the storefront navigation exposes wholesale categories and no retail entry
   assert.doesNotMatch(navigation, /Checkout|Shopping Cart|Payment|Approval|Account/)
   assert.match(navigation, /四季服饰/)
   assert.match(navigation, /FOUR SEASONS CLOTHING/)
-  assert.match(navigation, /h-16 items-center justify-between medium:h-\[76px\]/)
-  assert.match(navigation, /absolute left-1\/2 top-1\/2/)
+  assert.match(navigation, /grid-cols-\[44px_minmax\(0,1fr\)_auto\]/)
+  assert.match(navigation, /medium:flex medium:h-\[76px\] medium:justify-between/)
+  assert.doesNotMatch(navigation, /absolute left-1\/2 top-1\/2/)
   assert.match(navigation, /medium:hidden/)
 })
 

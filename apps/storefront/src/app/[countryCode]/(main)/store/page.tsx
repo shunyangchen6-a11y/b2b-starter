@@ -57,13 +57,13 @@ export default async function StorePage(props: Params) {
   ])
 
   return (
-    <div className="bg-neutral-100">
+    <div className="w-full min-w-0 max-w-full overflow-x-clip bg-neutral-100">
       <div
-        className="flex flex-col py-6 content-container gap-4"
+        className="content-container flex w-full min-w-0 max-w-full flex-col gap-4 py-6"
         data-testid="category-container"
       >
         <StoreBreadcrumb />
-        <div className="flex flex-col small:flex-row small:items-start gap-3">
+        <div className="flex min-w-0 max-w-full flex-col gap-3 small:flex-row small:items-start">
           <RefinementList
             sortBy={sort}
             categories={categories}
@@ -71,7 +71,7 @@ export default async function StorePage(props: Params) {
             products={availableProducts}
             selectedFilters={wholesaleFilters}
           />
-          <div className="w-full">
+          <div className="w-full min-w-0 max-w-full">
             <Suspense fallback={<SkeletonProductGrid />}>
               <PaginatedProducts
                 sortBy={sort}
