@@ -12,6 +12,10 @@ import {
   updateProductVariantsWorkflow,
   updateProductsWorkflow,
 } from "@medusajs/medusa/core-flows"
+import {
+  canRunWholesaleTestSeed,
+  WholesaleTestSeedEnvironment,
+} from "../lib/wholesale-test-seed-policy"
 
 type WholesaleProductSeed = {
   title: string
@@ -93,7 +97,11 @@ export default async function wholesale_test_data_seed({
   container,
 }: {
   container: MedusaContainer
-}) {
+}, environment: WholesaleTestSeedEnvironment = process.env) {
+  if (!canRunWholesaleTestSeed(environment)) {
+    return
+  }
+
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as any
   const link = container.resolve(ContainerRegistrationKeys.LINK) as any
