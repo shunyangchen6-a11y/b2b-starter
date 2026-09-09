@@ -1,4 +1,5 @@
 import { productStyleNumber, wholesaleStockStatus } from "@/lib/util/wholesale"
+import { formatWholesaleProductPrice } from "@/lib/util/get-product-price"
 import { HttpTypes } from "@medusajs/types"
 import { Text, clx } from "@medusajs/ui"
 import LocalizedClientLink from "@/modules/common/components/localized-client-link"
@@ -18,6 +19,7 @@ export default async function ProductPreview({
   }
 
   const stockStatus = wholesaleStockStatus(product)
+  const priceLabel = formatWholesaleProductPrice(product)
   const sizes = product.variants?.map((variant) => variant.options?.map((option) => option.value).filter(Boolean).join(" / ")).filter(Boolean).slice(0, 3)
 
   return (
@@ -40,7 +42,12 @@ export default async function ProductPreview({
           <Text className="min-h-10 line-clamp-2 break-words text-sm font-medium leading-5 text-zinc-950" data-testid="product-title">
             {product.title}
           </Text>
-          <Text className="text-sm text-zinc-700">Contact for Price</Text>
+          <Text
+            className="break-words text-base font-semibold leading-5 text-zinc-950"
+            data-testid="wholesale-product-price"
+          >
+            {priceLabel}
+          </Text>
           <div className="mt-auto flex min-w-0 items-end justify-between gap-2 pt-1">
             <Text
               className={clx("wholesale-status", {

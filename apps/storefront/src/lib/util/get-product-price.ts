@@ -88,3 +88,21 @@ export function getProductPrice({
     variantPrice: variantPrice(),
   }
 }
+
+export const formatWholesaleProductPrice = (
+  product: HttpTypes.StoreProduct
+): string => {
+  const { cheapestPrice } = getProductPrice({ product })
+
+  return cheapestPrice
+    ? `From ${cheapestPrice.calculated_price} / pc`
+    : "Contact for Price"
+}
+
+export const formatWholesaleVariantPrice = (variant: unknown): string => {
+  const price = getPricesForVariant(variant)
+
+  return price
+    ? `${price.calculated_price} / pc`
+    : "Contact for Price"
+}

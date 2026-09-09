@@ -44,13 +44,13 @@ test("the storefront navigation exposes wholesale categories and no retail entry
   assert.match(navigation, /medium:hidden/)
 })
 
-test("product cards use a fixed contained 4:5 image frame and contact-for-price copy", () => {
+test("product cards use a fixed contained 4:5 image frame and real wholesale price copy", () => {
   const preview = source("modules", "products", "components", "product-preview", "index.tsx")
   const thumbnail = source("modules", "products", "components", "thumbnail", "index.tsx")
 
   assert.match(preview, /aspect-\[4\/5\].*bg-neutral-100/)
-  assert.match(preview, /Contact for Price/)
-  assert.doesNotMatch(preview, /Contact for Wholesale Price/)
+  assert.match(preview, /formatWholesaleProductPrice/)
+  assert.match(preview, /data-testid="wholesale-product-price"/)
   assert.match(thumbnail, /object-contain object-center/)
   assert.doesNotMatch(thumbnail, /object-cover/)
 })

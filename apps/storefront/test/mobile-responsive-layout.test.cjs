@@ -28,7 +28,7 @@ for (const viewport of [360, 390, 400]) {
     assert.match(variants, /grid gap-3 md:hidden/)
     assert.match(variants, /hidden overflow-x-auto p-px md:block/)
     // Customer-facing product pricing is intentionally inquiry-only.
-    assert.match(variants, /Contact for Price/)
+    assert.match(variants, /formatWholesaleVariantPrice/)
     assert.doesNotMatch(variants, /Wholesale price/)
     assert.match(variants, /Available/)
     assert.match(variants, /break-words font-medium leading-5/)

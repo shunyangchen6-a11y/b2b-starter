@@ -4,6 +4,7 @@ import {
   normalizeSelectionQuantity,
 } from "@/lib/selection/quote"
 import { productStyleNumber, variantAvailableQuantity, wholesaleValue } from "@/lib/util/wholesale"
+import { formatWholesaleVariantPrice } from "@/lib/util/get-product-price"
 import { HttpTypes } from "@medusajs/types"
 import { clx, Table } from "@medusajs/ui"
 import Button from "@/modules/common/components/button"
@@ -104,7 +105,9 @@ const ProductVariantsTable = ({
                 </div>
                 <div className="min-w-0">
                   <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Price</dt>
-                  <dd className="mt-1 text-zinc-900">Contact for Price</dd>
+                  <dd className="mt-1 break-words text-zinc-900">
+                    {formatWholesaleVariantPrice(variant)}
+                  </dd>
                 </div>
                 <div className="min-w-0">
                   <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Available</dt>
@@ -169,7 +172,9 @@ const ProductVariantsTable = ({
                       </Table.Cell>
                     )
                   })}
-                  <Table.Cell className="px-4 border-x text-xs text-zinc-500">Contact for Price</Table.Cell>
+                  <Table.Cell className="px-4 border-x text-xs text-zinc-700">
+                    {formatWholesaleVariantPrice(variant)}
+                  </Table.Cell>
                   <Table.Cell className="pl-1 !pr-1">
                     <BulkTableQuantity
                       variantId={variant.id}

@@ -22,6 +22,14 @@ const ProductFacts = ({ product }: { product: HttpTypes.StoreProduct }) => {
 
   return (
     <div className="flex flex-col gap-y-2 w-full">
+      {product.subtitle && (
+        <p className="break-words text-sm leading-6 text-zinc-600">
+          {product.subtitle}
+        </p>
+      )}
+      <p className="text-sm text-zinc-600">
+        Category: {product.categories?.[0]?.name || "Men's wholesale"}
+      </p>
       {hasManageInventory && (stockStatus === "In Stock" ? (
         <span className="flex items-center gap-x-2 text-neutral-600 text-sm">
           <CheckCircleSolid className="text-emerald-700" /> Can be shipped
