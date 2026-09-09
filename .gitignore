@@ -48,6 +48,13 @@ yarn-error.log*
 .cache*/
 .pnpm-store
 
+# Local product-import and generated-media working files
+preview-import/
+wholesale-csv-templates/
+output/
+black-denim-approved-hero.png
+blue-denim-approved-hero.png
+
 # vercel
 .vercel
 
