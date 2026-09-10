@@ -16,11 +16,22 @@ import BulkTableQuantity from "@/modules/products/components/bulk-table-quantity
 import { Trash, XMark } from "@medusajs/icons"
 import * as Dialog from "@radix-ui/react-dialog"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import LocalizedClientLink from "@/modules/common/components/localized-client-link"
 
 export default function SelectionDrawer() {
-  const { items, updateQuantity, removeItem, clear } = useSelection()
-  const [open, setOpen] = useState(false)
+  const {
+    items,
+    productDrafts,
+    drawerOpen,
+    focusedHandle,
+    openDrawer,
+    closeDrawer,
+    removeProductDraft,
+    updateQuantity,
+    removeItem,
+    clear,
+  } = useSelection()
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false)
   const [inquiryError, setInquiryError] = useState<string | null>(null)
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false)
@@ -39,6 +50,21 @@ export default function SelectionDrawer() {
       pageUrl: typeof window === "undefined" ? pathname : window.location.href,
     })
   )
+
+  useEffect(() => {
+    if (!drawerOpen || !focusedHandle) return
+
+    const frame = window.requestAnimationFrame(() => {
+      const target = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-inquiry-handle]")
+      ).find((element) => element.dataset.inquiryHandle === focusedHandle)
+
+      target?.scrollIntoView({ block: "center", behavior: "smooth" })
+      target?.focus({ preventScroll: true })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [drawerOpen, focusedHandle, items, productDrafts])
 
   const sendInquiry = async () => {
     if (!whatsapp || !items.length) return
@@ -105,19 +131,19 @@ export default function SelectionDrawer() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => openDrawer()}
         className="min-h-11 shrink-0 whitespace-nowrap border border-zinc-300 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] hover:border-zinc-950 xsmall:px-3 xsmall:tracking-[0.1em]"
       >
         <span className="md:hidden">List ({totals.pieces})</span>
         <span className="hidden md:inline">Inquiry List ({totals.pieces} / {WHOLESALE_ORDER_MOQ})</span>
       </button>
 
-      {open && (
+      {drawerOpen && (
         <div
           className="fixed inset-0 z-[100] bg-black/40"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
-              setOpen(false)
+              closeDrawer()
             }
           }}
         >
@@ -132,20 +158,67 @@ export default function SelectionDrawer() {
                 </p>
                 <h2 className="text-xl font-semibold">Inquiry List</h2>
               </div>
-              <button aria-label="Close" onClick={() => setOpen(false)} className="ml-3 flex min-h-11 min-w-11 shrink-0 items-center justify-center">
+              <button aria-label="Close" onClick={closeDrawer} className="ml-3 flex min-h-11 min-w-11 shrink-0 items-center justify-center">
                 <XMark />
               </button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto py-4">
-              {items.length === 0 ? (
+              {items.length === 0 && productDrafts.length === 0 ? (
                 <p className="text-sm text-zinc-500">
                   Your Inquiry List is empty. Add styles and quantities to
                   request a wholesale quote.
                 </p>
               ) : (
-                items.map((item) => (
-                  <div key={item.id} className="border-b border-zinc-100 py-4 text-sm">
+                <>
+                  {productDrafts.map((product) => (
+                    <div
+                      key={product.handle}
+                      className="border-b border-zinc-100 py-4 text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-zinc-950"
+                      data-inquiry-handle={product.handle}
+                      tabIndex={-1}
+                    >
+                      <div className="flex min-w-0 justify-between gap-3">
+                        <div className="flex min-w-0 gap-3">
+                          <Thumbnail
+                            thumbnail={product.image}
+                            size="square"
+                            className="w-14 shrink-0 rounded bg-zinc-100"
+                          />
+                          <div className="min-w-0">
+                            <p className="break-words font-medium">{product.title}</p>
+                            <p className="break-words text-xs text-zinc-500">
+                              Style {product.styleNumber}
+                            </p>
+                            <p className="mt-2 text-xs text-zinc-700">
+                              Choose sizes and quantities to include this product.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          aria-label={`Remove ${product.title} from Inquiry List`}
+                          onClick={() => removeProductDraft(product.handle)}
+                          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center"
+                        >
+                          <Trash className="text-zinc-500" />
+                        </button>
+                      </div>
+                      <LocalizedClientLink
+                        href={`/products/${product.handle}`}
+                        onClick={closeDrawer}
+                        className="mt-3 flex min-h-11 w-full items-center justify-center border border-zinc-950 px-4 text-center text-xs font-semibold uppercase tracking-[0.1em] text-zinc-950 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
+                      >
+                        Choose sizes &amp; quantities
+                      </LocalizedClientLink>
+                    </div>
+                  ))}
+                  {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="border-b border-zinc-100 py-4 text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-zinc-950"
+                    data-inquiry-handle={item.handle}
+                    tabIndex={-1}
+                  >
                     <div className="flex min-w-0 justify-between gap-3">
                       <div className="flex min-w-0 gap-3">
                         <Thumbnail
@@ -186,7 +259,8 @@ export default function SelectionDrawer() {
                       )}
                     </div>
                   </div>
-                ))
+                  ))}
+                </>
               )}
             </div>
 
@@ -278,7 +352,7 @@ export default function SelectionDrawer() {
               <button
                 onClick={() => setClearConfirmationOpen(true)}
                 className="mt-3 min-h-11 w-full text-xs text-zinc-500 underline underline-offset-4"
-                disabled={!items.length}
+                disabled={!items.length && !productDrafts.length}
               >
                 Clear Inquiry List
               </button>

@@ -4,6 +4,7 @@ import { HttpTypes } from "@medusajs/types"
 import { Text, clx } from "@medusajs/ui"
 import LocalizedClientLink from "@/modules/common/components/localized-client-link"
 import Thumbnail from "../thumbnail"
+import ProductInquiryButton from "../product-inquiry-button"
 
 export default async function ProductPreview({
   product,
@@ -23,11 +24,11 @@ export default async function ProductPreview({
   const sizes = product.variants?.map((variant) => variant.options?.map((option) => option.value).filter(Boolean).join(" / ")).filter(Boolean).slice(0, 3)
 
   return (
-    <LocalizedClientLink href={`/products/${product.handle}`} className="group min-w-0">
-      <article
-        data-testid="product-wrapper"
-        className="relative flex min-w-0 flex-col bg-white w-full"
-      >
+    <article
+      data-testid="product-wrapper"
+      className="relative flex min-w-0 w-full flex-col bg-white"
+    >
+      <LocalizedClientLink href={`/products/${product.handle}`} className="group flex min-w-0 flex-1 flex-col">
         <div data-testid="product-image-frame" className="relative aspect-[4/5] w-full overflow-hidden bg-neutral-100">
           <Thumbnail
             thumbnail={product.thumbnail}
@@ -61,7 +62,16 @@ export default async function ProductPreview({
             <Text className="max-w-[45%] truncate text-[11px] text-zinc-500">{sizes?.join(" · ") || "Sizes on request"}</Text>
           </div>
         </div>
-      </article>
-    </LocalizedClientLink>
+      </LocalizedClientLink>
+      <ProductInquiryButton
+        productId={product.id}
+        handle={product.handle || product.id}
+        title={product.title}
+        styleNumber={productStyleNumber(product)}
+        image={product.thumbnail || undefined}
+        disabled={stockStatus === "Sold Out"}
+        className="mt-3"
+      />
+    </article>
   )
 }
