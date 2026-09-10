@@ -8,7 +8,6 @@ import SkeletonRelatedProducts from "@/modules/skeletons/templates/skeleton-rela
 import { notFound } from "next/navigation"
 import React, { Suspense } from "react"
 import ProductActionsWrapper from "./product-actions-wrapper"
-import ProductFacts from "../components/product-facts"
 
 type ProductTemplateProps = {
   product: HttpTypes.StoreProduct
@@ -26,27 +25,24 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   }
 
   return (
-    <div className="my-2 flex w-full min-w-0 max-w-full flex-col gap-y-2 overflow-x-clip">
+    <div className="flex w-full min-w-0 max-w-full flex-col overflow-x-clip bg-white">
       <div
-        className="content-container grid h-fit w-full min-w-0 max-w-full grid-cols-1 gap-2 md:grid-cols-2"
+        className="content-container grid h-fit w-full min-w-0 max-w-[1680px] grid-cols-1 items-start gap-8 py-4 large:grid-cols-[minmax(0,3fr)_minmax(380px,2fr)] large:gap-10 large:py-6"
         data-testid="product-container"
       >
         <ImageGallery product={product} />
-        <div className="flex h-full w-full min-w-0 max-w-full flex-col items-start justify-center gap-6 bg-neutral-100 p-4 xsmall:p-6 small:p-20">
+        <div className="flex w-full min-w-0 max-w-full flex-col items-start justify-start gap-6 bg-white large:sticky large:top-[116px] large:max-h-[calc(100vh-132px)] large:overflow-y-auto large:pr-2">
           <ProductInfo product={product} />
           <Suspense
             fallback={<ProductActions product={product} region={region} />}
           >
             <ProductActionsWrapper id={product.id} region={region} />
           </Suspense>
-          <ProductFacts product={product} />
+          <ProductTabs product={product} />
         </div>
       </div>
-      <div className="content-container">
-        <ProductTabs product={product} />
-      </div>
       <div
-        className="content-container"
+        className="content-container max-w-[1680px]"
         data-testid="related-products-container"
       >
         <Suspense fallback={<SkeletonRelatedProducts />}>

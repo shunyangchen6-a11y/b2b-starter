@@ -9,17 +9,19 @@ import { useEffect, useRef, useState } from "react"
 type ProductInquiryButtonProps = InquiryProductDraft & {
   disabled?: boolean
   className?: string
+  variantTargetId?: string
 }
 
 export default function ProductInquiryButton({
   disabled = false,
   className = "",
+  variantTargetId,
   ...product
 }: ProductInquiryButtonProps) {
-  const { addProductDraft, isProductAdded, openDrawer } = useSelection()
+  const { addProductDraft, hasSelectedProduct, openDrawer } = useSelection()
   const [loading, setLoading] = useState(false)
   const loadingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const added = isProductAdded(product.handle)
+  const added = hasSelectedProduct(product.handle)
 
   useEffect(() => () => {
     if (loadingTimer.current) clearTimeout(loadingTimer.current)
@@ -29,6 +31,14 @@ export default function ProductInquiryButton({
     if (disabled || loading) return
 
     if (!added) {
+      if (variantTargetId) {
+        document.getElementById(variantTargetId)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        })
+        return
+      }
+
       setLoading(true)
       addProductDraft(product)
       loadingTimer.current = setTimeout(() => setLoading(false), 250)

@@ -1,5 +1,6 @@
 export type SelectionItem = {
   id: string
+  productId?: string
   handle: string
   title: string
   styleNumber: string
@@ -160,6 +161,7 @@ export const normalizeSelectionItem = (
 
   return {
     id,
+    productId: stringValue(item.productId) || undefined,
     handle: stringValue(item.handle),
     title: stringValue(item.title),
     styleNumber: stringValue(item.styleNumber),
@@ -257,6 +259,22 @@ export const selectionTotals = (items: SelectionItem[]) => {
 
 export const meetsWholesaleOrderMinimum = (items: SelectionItem[]) =>
   selectionTotals(items).pieces >= WHOLESALE_ORDER_MOQ
+
+export const inquiryProgress = (items: SelectionItem[]) => {
+  const pieces = selectionTotals(items).pieces
+  const remaining = Math.max(0, WHOLESALE_ORDER_MOQ - pieces)
+
+  return {
+    pieces,
+    remaining,
+    reached: remaining === 0,
+    label: `${pieces} / ${WHOLESALE_ORDER_MOQ} · ${
+      remaining === 0
+        ? "MOQ reached"
+        : `Add ${remaining} more ${remaining === 1 ? "piece" : "pieces"}`
+    }`,
+  }
+}
 
 export const isSelectionWithinAvailability = (items: SelectionItem[]) =>
   items.every(

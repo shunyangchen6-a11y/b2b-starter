@@ -5,8 +5,8 @@ import {
 } from "@/lib/selection/quote"
 import { productStyleNumber, variantAvailableQuantity, wholesaleValue } from "@/lib/util/wholesale"
 import { formatWholesaleVariantPrice } from "@/lib/util/get-product-price"
+import { groupVariantsByColor } from "@/lib/util/product-variant-groups"
 import { HttpTypes } from "@medusajs/types"
-import { clx, Table } from "@medusajs/ui"
 import Button from "@/modules/common/components/button"
 import { useState } from "react"
 import BulkTableQuantity from "../bulk-table-quantity"
@@ -32,6 +32,14 @@ const ProductVariantsTable = ({
     )?.id
     return variant.options?.find((option) => option.option_id === optionId)?.value || "—"
   }
+
+  const colorOptionId = product.options?.find(
+    (option) => option.title?.toLowerCase() === "color"
+  )?.id
+  const variantGroups = groupVariantsByColor(
+    product.variants || [],
+    colorOptionId
+  )
 
   const handleQuantityChange = (variantId: string, quantity: number) => {
     const variant = product.variants?.find((entry) => entry.id === variantId)
@@ -60,6 +68,7 @@ const ProductVariantsTable = ({
       const options = Object.fromEntries((variant.options || []).map((option) => [option.option_id || option.id || "option", option.value || ""]))
       addItem({
         id: variant.id,
+        productId: product.id,
         handle: product.handle || product.id,
         title: product.title,
         styleNumber: productStyleNumber(product),
@@ -77,130 +86,66 @@ const ProductVariantsTable = ({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <div className="grid gap-3 md:hidden" data-testid="mobile-variant-cards">
-        {product.variants?.map((variant) => {
-          const availableQuantity = variant.manage_inventory === false
-            ? undefined
-            : variantAvailableQuantity(variant)
+    <div id="product-variant-selection" className="flex min-w-0 scroll-mt-24 flex-col gap-6">
+      <div className="grid min-w-0 gap-4" data-testid="color-grouped-variants">
+        {variantGroups.map(({ color, variants }) => (
+          <section key={color} className="min-w-0 border border-zinc-200 bg-white">
+            <h3 className="border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-950">
+              {color}
+            </h3>
+            <div className="divide-y divide-zinc-100">
+              {variants.map((variant) => {
+                const availableQuantity = variant.manage_inventory === false
+                  ? undefined
+                  : variantAvailableQuantity(variant)
 
-          return (
-            <article
-              key={variant.id}
-              className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
-              data-testid="mobile-variant-card"
-            >
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <div className="col-span-2 min-w-0">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">SKU</dt>
-                  <dd className="mt-1 break-words font-medium leading-5 text-zinc-950">{variant.sku || "—"}</dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Color</dt>
-                  <dd className="mt-1 break-words text-zinc-900">{optionValue(variant, "Color")}</dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Size</dt>
-                  <dd className="mt-1 break-words text-zinc-900">{optionValue(variant, "Size")}</dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Price</dt>
-                  <dd className="mt-1 break-words text-zinc-900">
-                    {formatWholesaleVariantPrice(variant)}
-                  </dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Available</dt>
-                  <dd className="mt-1 font-medium text-zinc-900">
-                    {typeof availableQuantity === "number"
-                      ? `${availableQuantity} available`
-                      : "Available on request"}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-4 border-t border-zinc-100 pt-3">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">Pieces</p>
-                <BulkTableQuantity
-                  variantId={variant.id}
-                  maxQuantity={availableQuantity}
-                  onChange={handleQuantityChange}
-                />
-              </div>
-            </article>
-          )
-        })}
-      </div>
-      <div className="hidden overflow-x-auto p-px md:block">
-        <Table className="w-full rounded-xl overflow-hidden shadow-borders-base border-none ">
-          <Table.Header className="border-t-0">
-            <Table.Row className="bg-neutral-100 border-none hover:!bg-neutral-100">
-              <Table.HeaderCell className="px-4">SKU</Table.HeaderCell>
-              {product.options?.map((option) => {
-                if (option.title === "Default option") {
-                  return null
-                }
                 return (
-                  <Table.HeaderCell key={option.id} className="px-4 border-x">
-                    {option.title}
-                  </Table.HeaderCell>
+                  <article
+                    key={variant.id}
+                    className="grid min-w-0 grid-cols-2 gap-3 p-4 lg:grid-cols-[minmax(90px,0.65fr)_minmax(120px,0.9fr)_minmax(210px,1.5fr)] lg:items-center"
+                    data-testid="grouped-variant-row"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Size</p>
+                      <p className="mt-1 text-base font-semibold text-zinc-950">{optionValue(variant, "Size")}</p>
+                      <p className="mt-1 truncate text-[11px] text-zinc-400" title={variant.sku || undefined}>
+                        {variant.sku || "SKU unavailable"}
+                      </p>
+                    </div>
+                    <div className="min-w-0 text-right lg:text-left">
+                      <p className="break-words text-sm font-medium text-zinc-900">
+                        {formatWholesaleVariantPrice(variant)}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {typeof availableQuantity === "number"
+                          ? `${availableQuantity} available`
+                          : "Available on request"}
+                      </p>
+                    </div>
+                    <div className="col-span-2 min-w-0 lg:col-span-1">
+                      <BulkTableQuantity
+                        variantId={variant.id}
+                        maxQuantity={availableQuantity}
+                        onChange={handleQuantityChange}
+                      />
+                    </div>
+                  </article>
                 )
               })}
-              <Table.HeaderCell className="px-4 border-x">Price</Table.HeaderCell>
-              <Table.HeaderCell className="px-4">Pieces</Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body className="border-none">
-            {product.variants?.map((variant, index) => {
-              const availableQuantity = variant.manage_inventory === false
-                ? undefined
-                : variantAvailableQuantity(variant)
-              return (
-                <Table.Row
-                  key={variant.id}
-                  className={clx({
-                    "border-b-0": index === product.variants?.length! - 1,
-                  })}
-                >
-                  <Table.Cell className="px-4">{variant.sku}</Table.Cell>
-                  {variant.options?.map((option, index) => {
-                    if (option.value === "Default option value") {
-                      return null
-                    }
-                    return (
-                      <Table.Cell key={option.id} className="px-4 border-x">
-                        {option.value}
-                      </Table.Cell>
-                    )
-                  })}
-                  <Table.Cell className="px-4 border-x text-xs text-zinc-700">
-                    {formatWholesaleVariantPrice(variant)}
-                  </Table.Cell>
-                  <Table.Cell className="pl-1 !pr-1">
-                    <BulkTableQuantity
-                      variantId={variant.id}
-                      maxQuantity={availableQuantity}
-                      onChange={handleQuantityChange}
-                    />
-                    {typeof availableQuantity === "number" && (
-                      <p className="px-2 pt-1 text-xs text-zinc-500">{availableQuantity} available</p>
-                    )}
-                  </Table.Cell>
-                </Table.Row>
-              )
-            })}
-          </Table.Body>
-        </Table>
+            </div>
+          </section>
+        ))}
       </div>
       <Button
         onClick={handleAddToSelection}
-        variant="primary"
+        variant="secondary"
         className="min-h-11 w-full md:h-10"
         disabled={totalQuantity === 0}
         data-testid="add-product-button"
       >
         {totalQuantity === 0
-          ? "Choose product variant(s) above"
-          : "Add to Inquiry List"}
+          ? "Choose sizes and quantities"
+          : `Save ${totalQuantity} pieces to Inquiry List`}
       </Button>
     </div>
   )

@@ -23,7 +23,7 @@ test("variant and Inquiry List inputs use five-piece increments with a final-sto
 test("Selection List blocks WhatsApp submission until the global 100-piece MOQ", () => {
   const drawer = source(["modules", "selection", "components", "selection-drawer", "index.tsx"])
 
-  assert.match(drawer, /\{totals\.pieces\} \/ \{WHOLESALE_ORDER_MOQ\} pieces/)
+  assert.match(drawer, /\{progress\.label\}/)
   assert.match(drawer, /Minimum order quantity is 100 pieces in total\. You can mix different styles, colors and sizes\./)
   assert.match(drawer, /!meetsOrderMinimum/)
   assert.match(drawer, /WHOLESALE_ORDER_MOQ - totals\.pieces/)

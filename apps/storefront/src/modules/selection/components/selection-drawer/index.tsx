@@ -4,6 +4,7 @@ import {
   createWhatsAppLink,
   createWhatsAppMessage,
   createStoreInquiryPayload,
+  inquiryProgress,
   isSelectionWithinAvailability,
   meetsWholesaleOrderMinimum,
   selectionTotals,
@@ -41,6 +42,7 @@ export default function SelectionDrawer() {
   const [message, setMessage] = useState("")
   const pathname = usePathname()
   const totals = selectionTotals(items)
+  const progress = inquiryProgress(items)
   const meetsOrderMinimum = meetsWholesaleOrderMinimum(items)
   const piecesRemaining = Math.max(0, WHOLESALE_ORDER_MOQ - totals.pieces)
   const whatsapp = createWhatsAppLink(
@@ -112,6 +114,7 @@ export default function SelectionDrawer() {
         whatsappUrl: whatsapp,
         openWhatsApp: (url) => window.open(url, "_blank", "noopener,noreferrer"),
       })
+      clear("confirm")
     } catch (error) {
       setInquiryError(
         error instanceof Error
@@ -265,9 +268,11 @@ export default function SelectionDrawer() {
             </div>
 
             <div className="shrink-0 border-t border-zinc-200 pt-4">
-              <div className="mb-4 flex justify-between text-sm">
+              <div className="mb-4 flex flex-wrap justify-between gap-2 text-sm">
                 <span>{totals.styles} style(s)</span>
-                <span>{totals.pieces} / {WHOLESALE_ORDER_MOQ} pieces</span>
+                <span className="font-semibold" aria-live="polite">
+                  {progress.label}
+                </span>
               </div>
               {!meetsOrderMinimum && items.length > 0 && (
                 <div className="mb-4 border-l-2 border-[#8A6A38] pl-3 text-sm text-[#6F542C]">
@@ -336,6 +341,12 @@ export default function SelectionDrawer() {
                   {inquiryError}
                 </p>
               )}
+              <ul className="mb-4 grid gap-1 border-y border-zinc-200 py-3 text-xs leading-5 text-zinc-600">
+                <li>Ready stock in Guangzhou, China</li>
+                <li>Product inspection available</li>
+                <li>Worldwide freight quotation available</li>
+                <li>Confirm stock and shipping on WhatsApp</li>
+              </ul>
               <button
                   className={`min-h-11 w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
                   !whatsapp || !items.length || !meetsOrderMinimum || isSubmittingInquiry

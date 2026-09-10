@@ -12,8 +12,10 @@ import {
   addInquiryProductDraft,
   InquiryProductDraft,
   parseStoredInquiryProducts,
+  reconcileStoredInquiry,
   removeDraftForSelectedProduct,
   selectionContainsProduct,
+  selectionHasQuantityForProduct,
 } from "./inquiry-products"
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from "react"
 
@@ -29,6 +31,7 @@ type SelectionContextValue = {
   addProductDraft: (product: InquiryProductDraft) => void
   removeProductDraft: (handle: string) => void
   isProductAdded: (handle: string) => boolean
+  hasSelectedProduct: (handle: string) => boolean
   openDrawer: (handle?: string) => void
   closeDrawer: () => void
   updateQuantity: (id: string, quantity: number) => void
@@ -61,6 +64,72 @@ export function SelectionProvider({ children }: PropsWithChildren) {
       (draft) => !restoredItems.some((item) => item.handle === draft.handle)
     ))
     setHasHydrated(true)
+
+    const productIds = Array.from(new Set([
+      ...restoredItems.map((item) => item.productId).filter(Boolean),
+      ...restoredProducts.map((draft) => draft.productId),
+    ])) as string[]
+    const legacyHandles = Array.from(new Set(
+      restoredItems
+        .filter((item) => !item.productId && item.handle)
+        .map((item) => item.handle)
+    ))
+
+    if (!productIds.length && !legacyHandles.length) {
+      setItems([])
+      setProductDrafts([])
+      return
+    }
+
+    const validateStoredProducts = async () => {
+      const backendUrl =
+        process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+      const search = new URLSearchParams({
+        limit: "100",
+        fields: "id,*variants.id",
+      })
+      const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+      const headers = publishableKey
+        ? { "x-publishable-api-key": publishableKey }
+        : undefined
+      productIds.forEach((id) => search.append("id[]", id))
+      const requests = [
+        ...(productIds.length
+          ? [fetch(`${backendUrl}/store/products?${search}`, { headers })]
+          : []),
+        ...legacyHandles.map((handle) => {
+          const legacySearch = new URLSearchParams({
+            handle,
+            limit: "1",
+            fields: "id,*variants.id",
+          })
+          return fetch(`${backendUrl}/store/products?${legacySearch}`, { headers })
+        }),
+      ]
+      const responses = await Promise.all(requests)
+
+      if (responses.some((response) => !response.ok)) return
+      const responseBodies = await Promise.all(responses.map((response) =>
+        response.json() as Promise<{
+          products?: Array<{ id: string; variants?: Array<{ id?: string }> }>
+        }>
+      ))
+      const availableProducts = responseBodies.flatMap(
+        (body) => body.products || []
+      )
+      const reconciled = reconcileStoredInquiry(
+        restoredItems,
+        restoredProducts,
+        availableProducts
+      )
+      setItems(reconciled.items)
+      setProductDrafts(reconciled.drafts)
+    }
+
+    void validateStoredProducts().catch(() => {
+      // Keep the saved inquiry on temporary network errors. It is only pruned
+      // after a successful catalog response confirms an item is unavailable.
+    })
   }, [])
 
   useEffect(() => {
@@ -94,6 +163,8 @@ export function SelectionProvider({ children }: PropsWithChildren) {
       ),
     isProductAdded: (handle) =>
       selectionContainsProduct(items, productDrafts, handle),
+    hasSelectedProduct: (handle) =>
+      selectionHasQuantityForProduct(items, handle),
     openDrawer: (handle) => {
       setFocusedHandle(handle || null)
       setDrawerOpen(true)

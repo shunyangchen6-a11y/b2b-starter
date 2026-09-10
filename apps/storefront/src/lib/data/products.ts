@@ -5,7 +5,11 @@ import { getAuthHeaders, getCacheOptions } from "@/lib/data/cookies"
 import { getRegion } from "@/lib/data/regions"
 import { sortProducts } from "@/lib/util/sort-products"
 import { SortOptions } from "@/modules/store/components/refinement-list/sort-products"
-import { filterWholesaleProducts, WholesaleFilters } from "@/lib/util/wholesale-filters"
+import {
+  filterWholesaleCatalogProducts,
+  filterWholesaleProducts,
+  WholesaleFilters,
+} from "@/lib/util/wholesale-filters"
 import { HttpTypes } from "@medusajs/types"
 
 export const getProductsById = async ({
@@ -173,8 +177,11 @@ export const listProductsWithSort = async ({
     countryCode,
   })
 
+  const catalogProducts = filterWholesaleCatalogProducts(products)
   const sortedProducts = sortProducts(
-    wholesaleFilters ? filterWholesaleProducts(products, wholesaleFilters) : products,
+    wholesaleFilters
+      ? filterWholesaleProducts(catalogProducts, wholesaleFilters)
+      : catalogProducts,
     sortBy
   )
 

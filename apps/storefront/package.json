@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev -p 8000",
     "build": "next build",
-    "test": "node --test test/middleware.test.cjs test/selection-quantity.test.cjs test/selection-moq-ui.test.cjs test/product-image.test.cjs test/product-image-layout.test.cjs test/product-metadata-display.test.cjs test/inquiry-submission.test.cjs test/inventory-availability.test.cjs test/global-ui-foundations.test.cjs test/wholesale-price-display.test.cjs test/product-inquiry-entry.test.cjs",
+    "test": "node --test test/middleware.test.cjs test/selection-quantity.test.cjs test/selection-moq-ui.test.cjs test/product-image.test.cjs test/product-image-layout.test.cjs test/product-metadata-display.test.cjs test/inquiry-submission.test.cjs test/inventory-availability.test.cjs test/global-ui-foundations.test.cjs test/wholesale-price-display.test.cjs test/product-inquiry-entry.test.cjs test/launch-readiness-ux.test.cjs",
     "start": "next start -p 8000",
     "lint": "next lint",
     "clean": "rm -rf .next node_modules",

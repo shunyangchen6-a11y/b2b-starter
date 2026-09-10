@@ -35,6 +35,36 @@ const metadataValue = (product: HttpTypes.StoreProduct, key: string) => {
   return typeof value === "string" || typeof value === "number" ? String(value) : ""
 }
 
+const isTruthyMetadata = (value: unknown) =>
+  value === true || value === 1 || String(value).toLowerCase() === "true"
+
+export const isWholesaleCatalogProduct = (
+  product: HttpTypes.StoreProduct
+) => {
+  const status = (product as HttpTypes.StoreProduct & { status?: string }).status
+  const handle = product.handle?.toLowerCase() || ""
+  const hasWholesaleCategory = product.categories?.some((category) =>
+    category.handle ? WHOLESALE_CATEGORY_HANDLES.has(category.handle) : false
+  )
+  const hasTestSku = product.variants?.some((variant) =>
+    variant.sku?.toUpperCase().startsWith("FS-TEST-")
+  )
+
+  return Boolean(
+    isTruthyMetadata(product.metadata?.wholesale_only) &&
+      hasWholesaleCategory &&
+      status !== "draft" &&
+      status !== "rejected" &&
+      !handle.startsWith("fs-test-") &&
+      !hasTestSku &&
+      !isTruthyMetadata(product.metadata?.test_data)
+  )
+}
+
+export const filterWholesaleCatalogProducts = (
+  products: HttpTypes.StoreProduct[]
+) => products.filter(isWholesaleCatalogProduct)
+
 const variantOptionValues = (product: HttpTypes.StoreProduct, optionTitle: string) => {
   const optionIds = new Set(
     product.options

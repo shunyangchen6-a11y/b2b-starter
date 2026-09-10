@@ -1,9 +1,9 @@
 "use client"
 
 import { HttpTypes } from "@medusajs/types"
-import ProductPrice from "../product-price"
 import ProductVariantsTable from "../product-variants-table"
 import ProductInquiryButton from "../product-inquiry-button"
+import ProductInquiryProgress from "../product-inquiry-progress"
 import { productStyleNumber, wholesaleStockStatus } from "@/lib/util/wholesale"
 
 type ProductActionsProps = {
@@ -18,7 +18,8 @@ export default function ProductActions({
   return (
     <>
       <div className="flex flex-col gap-y-2 w-full">
-        <ProductPrice product={product} />
+        <ProductVariantsTable product={product} region={region} />
+        <ProductInquiryProgress />
         <ProductInquiryButton
           productId={product.id}
           handle={product.handle || product.id}
@@ -26,9 +27,9 @@ export default function ProductActions({
           styleNumber={productStyleNumber(product)}
           image={product.thumbnail || undefined}
           disabled={wholesaleStockStatus(product) === "Sold Out"}
-          className="mb-2"
+          className="mt-2"
+          variantTargetId="product-variant-selection"
         />
-        <ProductVariantsTable product={product} region={region} />
       </div>
     </>
   )

@@ -1,107 +1,106 @@
 "use client"
 
 import { HttpTypes } from "@medusajs/types"
-import { Table, Text } from "@medusajs/ui"
+import * as Accordion from "@radix-ui/react-accordion"
 import Markdown from "react-markdown"
-import Accordion from "./accordion"
+import ProductFacts from "../product-facts"
 
 type ProductTabsProps = {
   product: HttpTypes.StoreProduct
 }
 
+const optionValues = (product: HttpTypes.StoreProduct, title: string) => {
+  const optionId = product.options?.find(
+    (option) => option.title?.toLowerCase() === title.toLowerCase()
+  )?.id
+
+  return Array.from(new Set(
+    product.variants
+      ?.flatMap((variant) => variant.options || [])
+      .filter((option) => option.option_id === optionId)
+      .map((option) => option.value)
+      .filter(Boolean) || []
+  ))
+}
+
 const ProductTabs = ({ product }: ProductTabsProps) => {
-  const tabs = [
-    {
-      label: "Description",
-      component: <ProductSpecsTab product={product} />,
-    },
-    {
-      label: "Specifications",
-      component: <ProductSpecificationsTab product={product} />,
-    },
-  ]
+  const colors = optionValues(product, "Color")
+  const sizes = optionValues(product, "Size")
 
   return (
-    <div className="w-full">
-      <Accordion type="multiple" className="flex flex-col gap-y-2">
-        {tabs.map((tab, i) => (
-          <Accordion.Item
-            className="bg-neutral-100 small:px-24 px-6"
-            key={i}
-            title={tab.label}
-            headingSize="medium"
-            value={tab.label}
-          >
-            {tab.component}
-          </Accordion.Item>
-        ))}
-      </Accordion>
-    </div>
+    <Accordion.Root
+      type="multiple"
+      defaultValue={["description"]}
+      className="w-full border-t border-zinc-300"
+      data-testid="product-detail-accordion"
+    >
+      <DetailSection value="description" title="Description">
+        <div className="prose prose-sm max-w-none text-zinc-600 prose-p:leading-6">
+          <Markdown>{product.description || product.subtitle || "Product description available on request."}</Markdown>
+        </div>
+      </DetailSection>
+
+      <DetailSection value="specifications" title="Specifications">
+        <ProductFacts product={product} />
+      </DetailSection>
+
+      <DetailSection value="size-fit" title="Size & Fit">
+        <dl className="grid gap-2 text-sm text-zinc-600">
+          {colors.length > 0 && (
+            <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
+              <dt className="font-medium text-zinc-950">Colors</dt>
+              <dd>{colors.join(", ")}</dd>
+            </div>
+          )}
+          {sizes.length > 0 && (
+            <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
+              <dt className="font-medium text-zinc-950">Available sizes</dt>
+              <dd>{sizes.join(", ")}</dd>
+            </div>
+          )}
+          <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
+            <dt className="font-medium text-zinc-950">Ordering</dt>
+            <dd>Select quantities by color and size above.</dd>
+          </div>
+        </dl>
+      </DetailSection>
+
+      <DetailSection value="shipping-inspection" title="Shipping & Inspection">
+        <ul className="grid gap-2 text-sm leading-5 text-zinc-600">
+          <li>Ready stock in Guangzhou, China</li>
+          <li>Product inspection available</li>
+          <li>Worldwide freight quotation available</li>
+          <li>Confirm stock and shipping on WhatsApp</li>
+        </ul>
+      </DetailSection>
+    </Accordion.Root>
   )
 }
 
-const ProductSpecsTab = ({ product }: ProductTabsProps) => {
+function DetailSection({
+  value,
+  title,
+  children,
+}: {
+  value: string
+  title: string
+  children: React.ReactNode
+}) {
   return (
-    <div className="text-small-regular py-8 xl:w-2/3">
-      <Markdown
-        components={{
-          p: ({ children }) => (
-            <Text className="text-neutral-950 mb-2">{children}</Text>
-          ),
-          h2: ({ children }) => (
-            <Text className="text-xl text-neutral-950 my-4 font-semibold">
-              {children}
-            </Text>
-          ),
-          h3: ({ children }) => (
-            <Text className="text-lg text-neutral-950 mb-2">{children}</Text>
-          ),
-        }}
-      >
-        {product.description ? product.description : "-"}
-      </Markdown>
-    </div>
-  )
-}
-
-const ProductSpecificationsTab = ({ product }: ProductTabsProps) => {
-  return (
-    <div className="text-small-regular py-8">
-      <Table className="rounded-lg shadow-borders-base overflow-hidden border-none">
-        <Table.Body>
-          {product.weight && (
-            <Table.Row>
-              <Table.Cell className="border-r">
-                <span className="font-semibold">Weight</span>
-              </Table.Cell>
-              <Table.Cell className="px-4">{product.weight} grams</Table.Cell>
-            </Table.Row>
-          )}
-          {(product.height || product.width || product.length) && (
-            <Table.Row>
-              <Table.Cell className="border-r">
-                <span className="font-semibold">Dimensions (HxWxL)</span>
-              </Table.Cell>
-              <Table.Cell className="px-4">
-                {product.height}mm x {product.width}mm x {product.length}mm
-              </Table.Cell>
-            </Table.Row>
-          )}
-
-          {product.metadata &&
-            Object.entries(product.metadata).map(([key, value]) => (
-              <Table.Row key={key}>
-                <Table.Cell className="border-r">
-                  <span className="font-semibold">{key}</span>
-                </Table.Cell>
-                <Table.Cell className="px-4">
-                  <p>{value as string}</p>
-                </Table.Cell>
-              </Table.Row>
-            ))}
-        </Table.Body>
-      </Table>
-    </div>
+    <Accordion.Item value={value} className="border-b border-zinc-300">
+      <Accordion.Header>
+        <Accordion.Trigger className="group flex min-h-12 w-full items-center justify-between gap-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950">
+          <span>{title}</span>
+          <span aria-hidden className="text-lg font-normal leading-none">
+            <span className="group-data-[state=open]:hidden">+</span>
+            <span className="hidden group-data-[state=open]:inline">−</span>
+          </span>
+        </Accordion.Trigger>
+      </Accordion.Header>
+      <Accordion.Content className="overflow-hidden pb-5 data-[state=closed]:animate-accordion-close data-[state=open]:animate-accordion-open">
+        {children}
+      </Accordion.Content>
+    </Accordion.Item>
   )
 }
 
