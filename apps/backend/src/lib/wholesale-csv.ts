@@ -1,3 +1,7 @@
+import { WHOLESALE_CATEGORIES } from "./wholesale-categories"
+
+export { WHOLESALE_CATEGORIES } from "./wholesale-categories"
+
 export const WHOLESALE_CSV_COLUMNS = [
   "product_handle",
   "product_title",
@@ -20,13 +24,6 @@ export type WholesaleCsvColumn = (typeof WHOLESALE_CSV_COLUMNS)[number]
 export type WholesaleCsvRow = Record<WholesaleCsvColumn, string> & { line: number }
 export type WholesaleCsvIssue = { line: number; sku?: string; reason: string }
 
-export const WHOLESALE_CATEGORIES = new Set([
-  "jogger-pants",
-  "cargo-pants",
-  "casual-pants",
-  "jeans",
-  "t-shirts",
-])
 export const WHOLESALE_STOCK_STATUSES = new Set(["in_stock", "low_stock", "sold_out"])
 
 const MAX_CSV_BYTES = 2 * 1024 * 1024

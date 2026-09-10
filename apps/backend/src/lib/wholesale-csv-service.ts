@@ -1,19 +1,20 @@
 import { MedusaContainer } from "@medusajs/framework"
 import { ContainerRegistrationKeys, MedusaError, Modules, ProductStatus } from "@medusajs/framework/utils"
 import {
+  createProductCategoriesWorkflow,
   createProductVariantsWorkflow,
   createProductsWorkflow,
   linkProductsToSalesChannelWorkflow,
   updateProductsWorkflow,
   updateProductVariantsWorkflow,
 } from "@medusajs/medusa/core-flows"
+import { missingWholesaleCategoryDefinitions } from "./wholesale-categories"
 import {
   parseAndValidateWholesaleCsv,
   serializeWholesaleCsv,
   WholesaleCsvIssue,
   WholesaleCsvColumn,
   WholesaleCsvRow,
-  WHOLESALE_CATEGORIES,
 } from "./wholesale-csv"
 
 type ExistingVariant = { id: string; sku: string | null; inventory_items?: { inventory_item_id: string }[] }
@@ -143,9 +144,27 @@ export const importWholesaleCsv = async (container: MedusaContainer, csv: string
   if (!preview.rows.length) return preview.summary
 
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as any
+  const requiredCategoryHandles = new Set(preview.rows.map((row) => row.category))
+  const { data: existingCategories } = await query.graph({ entity: "product_category", fields: ["id", "handle"] })
+  const missingCategories = missingWholesaleCategoryDefinitions(
+    existingCategories.map((category: { handle: string }) => category.handle),
+    requiredCategoryHandles
+  )
+  if (missingCategories.length) {
+    await createProductCategoriesWorkflow(container).run({
+      input: {
+        product_categories: missingCategories.map((category) => ({
+          ...category,
+          is_active: true,
+        })),
+      },
+    })
+  }
   const { data: categories } = await query.graph({ entity: "product_category", fields: ["id", "handle"] })
   const categoryIds = new Map<string, string>(categories.map((category: { id: string; handle: string }) => [category.handle, category.id]))
-  if (WHOLESALE_CATEGORIES.size !== Array.from(categoryIds.keys()).filter((handle) => WHOLESALE_CATEGORIES.has(handle)).length) throw new MedusaError(MedusaError.Types.INVALID_DATA, "Wholesale product categories must be seeded before import.")
+  if (Array.from(requiredCategoryHandles).some((handle) => !categoryIds.has(handle))) {
+    throw new MedusaError(MedusaError.Types.INVALID_DATA, "Required wholesale product categories could not be initialized.")
+  }
   const { data: currentProducts } = await query.graph({
     entity: "product",
     fields: ["id", "handle", "metadata", "variants.id", "variants.sku"],
