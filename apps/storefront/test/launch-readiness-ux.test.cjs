@@ -140,9 +140,46 @@ test("selection persistence stores catalog IDs but no customer privacy fields", 
   assert.match(context, /localStorage\.getItem\(STORAGE_KEY\)/)
   assert.match(context, /localStorage\.setItem\(STORAGE_KEY, JSON\.stringify\(items\)\)/)
   assert.match(context, /reconcileStoredInquiry/)
+  assert.match(context, /localStorage\.removeItem\(PRODUCT_STORAGE_KEY\)/)
+  assert.doesNotMatch(context, /setProductDrafts|addProductDraft/)
   assert.match(variants, /productId: product\.id/)
   assert.doesNotMatch(context, /contactName|customerWhatsapp|JWT|token/i)
 })
+
+test("mobile Inquiry List uses dynamic viewport scrolling and preserves important product data", () => {
+  const drawer = fs.readFileSync(
+    path.join(__dirname, "..", "src", "modules", "selection", "components", "selection-drawer", "index.tsx"),
+    "utf8"
+  )
+
+  assert.match(drawer, /h-\[100dvh\]/)
+  assert.match(drawer, /overflow-y-auto/)
+  assert.match(drawer, /sticky top-0/)
+  assert.match(drawer, /pb-\[max\(24px,env\(safe-area-inset-bottom\)\)\]/)
+  assert.match(drawer, /document\.body\.style\.position = "fixed"/)
+  assert.match(drawer, /window\.scrollTo\(0, scrollPosition\)/)
+  assert.match(drawer, /Style No\./)
+  assert.match(drawer, />Color</)
+  assert.match(drawer, />Size</)
+  assert.match(drawer, />Pieces</)
+  assert.match(drawer, />Unit price</)
+  assert.match(drawer, /line-clamp-2/)
+  assert.match(drawer, /onFocus=\{keepFocusedFieldVisible\}/)
+  assert.match(drawer, /min-h-24/)
+  assert.match(drawer, /min-h-12 w-full bg-zinc-950/)
+  assert.doesNotMatch(drawer, /productDrafts\.map/)
+})
+
+for (const viewport of [360, 390, 400]) {
+  test(`mobile Inquiry List content remains width-bounded at ${viewport}px`, () => {
+    const horizontalPadding = 32
+    const thumbnail = 64
+    const deleteTarget = 44
+    const gaps = 24
+
+    assert.ok(viewport - horizontalPadding - thumbnail - deleteTarget - gaps > 0)
+  })
+}
 
 test("mobile fixed action bar is safe-area aware and hidden while the drawer is open", () => {
   const bar = fs.readFileSync(

@@ -9,12 +9,7 @@ import {
   SelectionItem,
 } from "./quote"
 import {
-  addInquiryProductDraft,
-  InquiryProductDraft,
-  parseStoredInquiryProducts,
   reconcileStoredInquiry,
-  removeDraftForSelectedProduct,
-  selectionContainsProduct,
   selectionHasQuantityForProduct,
 } from "./inquiry-products"
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from "react"
@@ -24,18 +19,15 @@ const PRODUCT_STORAGE_KEY = "four-seasons-inquiry-products"
 
 type SelectionContextValue = {
   items: SelectionItem[]
-  productDrafts: InquiryProductDraft[]
   drawerOpen: boolean
   focusedHandle: string | null
   addItem: (item: SelectionItem) => void
-  addProductDraft: (product: InquiryProductDraft) => void
-  removeProductDraft: (handle: string) => void
-  isProductAdded: (handle: string) => boolean
   hasSelectedProduct: (handle: string) => boolean
   openDrawer: (handle?: string) => void
   closeDrawer: () => void
   updateQuantity: (id: string, quantity: number) => void
   removeItem: (id: string) => void
+  removeProduct: (handle: string) => void
   clear: (action: ClearSelectionAction) => void
 }
 
@@ -43,7 +35,6 @@ const SelectionContext = createContext<SelectionContextValue | null>(null)
 
 export function SelectionProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<SelectionItem[]>([])
-  const [productDrafts, setProductDrafts] = useState<InquiryProductDraft[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [focusedHandle, setFocusedHandle] = useState<string | null>(null)
   const [hasHydrated, setHasHydrated] = useState(false)
@@ -51,23 +42,17 @@ export function SelectionProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     const restoredItems = parseStoredSelection(stored)
-    const restoredProducts = parseStoredInquiryProducts(
-      window.localStorage.getItem(PRODUCT_STORAGE_KEY)
-    )
+    window.localStorage.removeItem(PRODUCT_STORAGE_KEY)
 
     if (stored && restoredItems.length === 0) {
       window.localStorage.removeItem(STORAGE_KEY)
     }
 
     setItems(restoredItems)
-    setProductDrafts(restoredProducts.filter(
-      (draft) => !restoredItems.some((item) => item.handle === draft.handle)
-    ))
     setHasHydrated(true)
 
     const productIds = Array.from(new Set([
       ...restoredItems.map((item) => item.productId).filter(Boolean),
-      ...restoredProducts.map((draft) => draft.productId),
     ])) as string[]
     const legacyHandles = Array.from(new Set(
       restoredItems
@@ -77,7 +62,6 @@ export function SelectionProvider({ children }: PropsWithChildren) {
 
     if (!productIds.length && !legacyHandles.length) {
       setItems([])
-      setProductDrafts([])
       return
     }
 
@@ -119,11 +103,10 @@ export function SelectionProvider({ children }: PropsWithChildren) {
       )
       const reconciled = reconcileStoredInquiry(
         restoredItems,
-        restoredProducts,
+        [],
         availableProducts
       )
       setItems(reconciled.items)
-      setProductDrafts(reconciled.drafts)
     }
 
     void validateStoredProducts().catch(() => {
@@ -138,31 +121,15 @@ export function SelectionProvider({ children }: PropsWithChildren) {
     }
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-    window.localStorage.setItem(
-      PRODUCT_STORAGE_KEY,
-      JSON.stringify(productDrafts)
-    )
-  }, [hasHydrated, items, productDrafts])
+  }, [hasHydrated, items])
 
   const value = useMemo<SelectionContextValue>(() => ({
     items,
-    productDrafts,
     drawerOpen,
     focusedHandle,
     addItem: (item) => {
       setItems((current) => mergeSelectionItem(current, item))
-      setProductDrafts((current) => removeDraftForSelectedProduct(current, item))
     },
-    addProductDraft: (product) =>
-      setProductDrafts((current) =>
-        addInquiryProductDraft(current, items, product)
-      ),
-    removeProductDraft: (handle) =>
-      setProductDrafts((current) =>
-        current.filter((product) => product.handle !== handle)
-      ),
-    isProductAdded: (handle) =>
-      selectionContainsProduct(items, productDrafts, handle),
     hasSelectedProduct: (handle) =>
       selectionHasQuantityForProduct(items, handle),
     openDrawer: (handle) => {
@@ -190,11 +157,12 @@ export function SelectionProvider({ children }: PropsWithChildren) {
         )
       }),
     removeItem: (id) => setItems((current) => current.filter((item) => item.id !== id)),
+    removeProduct: (handle) =>
+      setItems((current) => current.filter((item) => item.handle !== handle)),
     clear: (action) => {
       setItems((current) => applySelectionClearAction(current, action))
-      if (action === "confirm") setProductDrafts([])
     },
-  }), [drawerOpen, focusedHandle, items, productDrafts])
+  }), [drawerOpen, focusedHandle, items])
 
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>
 }

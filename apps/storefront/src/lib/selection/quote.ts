@@ -12,6 +12,7 @@ export type SelectionItem = {
   packSize: 5 | 10
   availableQuantity?: number
   image?: string
+  unitPrice?: string
 }
 
 export type StoreInquiryItem = Pick<
@@ -173,6 +174,7 @@ export const normalizeSelectionItem = (
     packSize: normalizeQuantity(item.packSize) === 10 ? 10 : 5,
     availableQuantity,
     image: typeof item.image === "string" ? item.image : undefined,
+    unitPrice: typeof item.unitPrice === "string" ? item.unitPrice : undefined,
   }
 }
 

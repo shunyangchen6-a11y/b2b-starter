@@ -4,6 +4,7 @@ import {
   InquiryProductDraft,
 } from "@/lib/selection/inquiry-products"
 import { useSelection } from "@/lib/selection/selection-context"
+import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 type ProductInquiryButtonProps = InquiryProductDraft & {
@@ -18,7 +19,9 @@ export default function ProductInquiryButton({
   variantTargetId,
   ...product
 }: ProductInquiryButtonProps) {
-  const { addProductDraft, hasSelectedProduct, openDrawer } = useSelection()
+  const { hasSelectedProduct, openDrawer } = useSelection()
+  const pathname = usePathname()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const loadingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const added = hasSelectedProduct(product.handle)
@@ -39,9 +42,13 @@ export default function ProductInquiryButton({
         return
       }
 
+      const countryCode = pathname.split("/").filter(Boolean)[0]
       setLoading(true)
-      addProductDraft(product)
-      loadingTimer.current = setTimeout(() => setLoading(false), 250)
+      router.push(
+        `/${countryCode}/products/${product.handle}#product-variant-selection`
+      )
+      loadingTimer.current = setTimeout(() => setLoading(false), 1000)
+      return
     }
 
     openDrawer(product.handle)

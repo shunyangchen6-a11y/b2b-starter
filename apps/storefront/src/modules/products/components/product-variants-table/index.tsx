@@ -80,6 +80,7 @@ const ProductVariantsTable = ({
         packSize: wholesaleValue(product.metadata, "pack_size", "5") === "10" ? 10 : 5,
         availableQuantity: Number.isSafeInteger(availableQuantity) ? availableQuantity : undefined,
         image: product.thumbnail || undefined,
+        unitPrice: formatWholesaleVariantPrice(variant),
       })
     })
     setQuantities(new Map())

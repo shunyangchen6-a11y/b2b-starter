@@ -17,20 +17,18 @@ import BulkTableQuantity from "@/modules/products/components/bulk-table-quantity
 import { Trash, XMark } from "@medusajs/icons"
 import * as Dialog from "@radix-ui/react-dialog"
 import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
-import LocalizedClientLink from "@/modules/common/components/localized-client-link"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 export default function SelectionDrawer() {
   const {
     items,
-    productDrafts,
     drawerOpen,
     focusedHandle,
     openDrawer,
     closeDrawer,
-    removeProductDraft,
     updateQuantity,
     removeItem,
+    removeProduct,
     clear,
   } = useSelection()
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false)
@@ -40,11 +38,24 @@ export default function SelectionDrawer() {
   const [customerWhatsapp, setCustomerWhatsapp] = useState("")
   const [country, setCountry] = useState("")
   const [message, setMessage] = useState("")
+  const closeDrawerRef = useRef(closeDrawer)
+  closeDrawerRef.current = closeDrawer
   const pathname = usePathname()
   const totals = selectionTotals(items)
   const progress = inquiryProgress(items)
   const meetsOrderMinimum = meetsWholesaleOrderMinimum(items)
   const piecesRemaining = Math.max(0, WHOLESALE_ORDER_MOQ - totals.pieces)
+  const selectedProducts = useMemo(() => {
+    const groups = new Map<string, typeof items>()
+
+    items.forEach((item) => {
+      if (item.quantity <= 0) return
+      const key = item.productId || item.handle
+      groups.set(key, [...(groups.get(key) || []), item])
+    })
+
+    return Array.from(groups.values())
+  }, [items])
   const whatsapp = createWhatsAppLink(
     process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "",
     createWhatsAppMessage({
@@ -66,7 +77,46 @@ export default function SelectionDrawer() {
     })
 
     return () => window.cancelAnimationFrame(frame)
-  }, [drawerOpen, focusedHandle, items, productDrafts])
+  }, [drawerOpen, focusedHandle, items])
+
+  useEffect(() => {
+    if (!drawerOpen) return
+
+    const scrollPosition = window.scrollY
+    const previous = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+    }
+
+    document.body.style.overflow = "hidden"
+    document.body.style.position = "fixed"
+    document.body.style.top = `-${scrollPosition}px`
+    document.body.style.width = "100%"
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeDrawerRef.current()
+    }
+    window.addEventListener("keydown", handleEscape)
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape)
+      document.body.style.overflow = previous.overflow
+      document.body.style.position = previous.position
+      document.body.style.top = previous.top
+      document.body.style.width = previous.width
+      window.scrollTo(0, scrollPosition)
+    }
+  }, [drawerOpen])
+
+  const keepFocusedFieldVisible = (
+    event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    window.setTimeout(() => {
+      event.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })
+    }, 250)
+  }
 
   const sendInquiry = async () => {
     if (!whatsapp || !items.length) return
@@ -143,7 +193,7 @@ export default function SelectionDrawer() {
 
       {drawerOpen && (
         <div
-          className="fixed inset-0 z-[100] bg-black/40"
+          className="fixed inset-0 z-[100] h-[100dvh] bg-black/40"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               closeDrawer()
@@ -151,123 +201,127 @@ export default function SelectionDrawer() {
           }}
         >
           <aside
-            className="ml-auto flex h-full w-full min-w-0 max-w-md flex-col overflow-x-hidden bg-white p-4 xsmall:p-5 shadow-2xl"
+            className="ml-auto h-[100dvh] w-full min-w-0 max-w-md overflow-x-hidden overflow-y-auto overscroll-contain bg-white pb-[max(24px,env(safe-area-inset-bottom))] shadow-2xl"
+            data-testid="inquiry-list-drawer"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex min-w-0 items-center justify-between border-b border-zinc-200 pb-4">
+            <header className="sticky top-0 z-10 flex min-w-0 items-center justify-between border-b border-zinc-200 bg-white px-4 py-3 xsmall:px-5">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
                   FOUR SEASONS CLOTHING
                 </p>
                 <h2 className="text-xl font-semibold">Inquiry List</h2>
+                <p className="mt-1 text-xs text-zinc-500" aria-live="polite">
+                  {totals.styles} style(s) · {progress.label}
+                </p>
               </div>
               <button aria-label="Close" onClick={closeDrawer} className="ml-3 flex min-h-11 min-w-11 shrink-0 items-center justify-center">
                 <XMark />
               </button>
-            </div>
+            </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto py-4">
-              {items.length === 0 && productDrafts.length === 0 ? (
-                <p className="text-sm text-zinc-500">
-                  Your Inquiry List is empty. Add styles and quantities to
-                  request a wholesale quote.
-                </p>
+            <div className="px-4 pt-4 xsmall:px-5">
+              {selectedProducts.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-base font-semibold text-zinc-950">
+                    Your inquiry list is empty
+                  </p>
+                  <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-zinc-500">
+                    Browse products and select sizes to start an inquiry.
+                  </p>
+                </div>
               ) : (
-                <>
-                  {productDrafts.map((product) => (
+                <div className="grid gap-6">
+                  {selectedProducts.map((productItems) => {
+                    const product = productItems[0]
+
+                    return (
                     <div
-                      key={product.handle}
-                      className="border-b border-zinc-100 py-4 text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-zinc-950"
+                      key={product.productId || product.handle}
+                      className="border-b border-zinc-200 pb-6 text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-zinc-950"
                       data-inquiry-handle={product.handle}
                       tabIndex={-1}
                     >
-                      <div className="flex min-w-0 justify-between gap-3">
-                        <div className="flex min-w-0 gap-3">
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-1 gap-3">
                           <Thumbnail
                             thumbnail={product.image}
                             size="square"
-                            className="w-14 shrink-0 rounded bg-zinc-100"
+                            className="h-16 w-16 shrink-0 bg-zinc-100"
                           />
                           <div className="min-w-0">
-                            <p className="break-words font-medium">{product.title}</p>
-                            <p className="break-words text-xs text-zinc-500">
-                              Style {product.styleNumber}
+                            <p className="line-clamp-2 break-words font-semibold leading-5 text-zinc-950">
+                              {product.title}
                             </p>
-                            <p className="mt-2 text-xs text-zinc-700">
-                              Choose sizes and quantities to include this product.
+                            <p className="mt-1 break-words text-xs uppercase tracking-[0.08em] text-zinc-500">
+                              Style No. {product.styleNumber}
                             </p>
                           </div>
                         </div>
                         <button
                           aria-label={`Remove ${product.title} from Inquiry List`}
-                          onClick={() => removeProductDraft(product.handle)}
+                          onClick={() => removeProduct(product.handle)}
                           className="flex min-h-11 min-w-11 shrink-0 items-center justify-center"
                         >
                           <Trash className="text-zinc-500" />
                         </button>
                       </div>
-                      <LocalizedClientLink
-                        href={`/products/${product.handle}`}
-                        onClick={closeDrawer}
-                        className="mt-3 flex min-h-11 w-full items-center justify-center border border-zinc-950 px-4 text-center text-xs font-semibold uppercase tracking-[0.1em] text-zinc-950 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
-                      >
-                        Choose sizes &amp; quantities
-                      </LocalizedClientLink>
-                    </div>
-                  ))}
-                  {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border-b border-zinc-100 py-4 text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-zinc-950"
-                    data-inquiry-handle={item.handle}
-                    tabIndex={-1}
-                  >
-                    <div className="flex min-w-0 justify-between gap-3">
-                      <div className="flex min-w-0 gap-3">
-                        <Thumbnail
-                          thumbnail={item.image}
-                          size="square"
-                          className="w-14 shrink-0 rounded bg-zinc-100"
-                        />
-                        <div className="min-w-0">
-                          <p className="break-words font-medium">{item.title}</p>
-                          <p className="break-words text-xs text-zinc-500">
-                            Style {item.styleNumber} · {item.color} · {item.size}
-                          </p>
-                          <p className="mt-1 break-words text-xs text-zinc-500">
-                            {item.packSize}-piece pack
-                          </p>
-                        </div>
+
+                      <div className="mt-4 grid gap-4">
+                        {productItems.map((item) => (
+                          <div key={item.id} className="min-w-0 border-t border-zinc-100 pt-4">
+                            <div className="grid min-w-0 grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                              <div className="min-w-0">
+                                <p className="text-zinc-500">Color</p>
+                                <p className="mt-1 break-words font-medium text-zinc-950">{item.color}</p>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-zinc-500">Size</p>
+                                <p className="mt-1 break-words font-medium text-zinc-950">{item.size}</p>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-zinc-500">Pieces</p>
+                                <p className="mt-1 font-medium text-zinc-950">{item.quantity}</p>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-zinc-500">Unit price</p>
+                                <p className="mt-1 break-words font-medium text-zinc-950">
+                                  {item.unitPrice || "Contact for Price"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2">
+                              <BulkTableQuantity
+                                variantId={item.id}
+                                maxQuantity={item.availableQuantity}
+                                onChange={updateQuantity}
+                                value={item.quantity}
+                              />
+                              <button
+                                type="button"
+                                className="min-h-11 px-2 text-xs text-zinc-500 underline underline-offset-4"
+                                onClick={() => removeItem(item.id)}
+                              >
+                                Remove size
+                              </button>
+                            </div>
+                            {item.availableQuantity !== undefined && (
+                              <p className="mt-2 text-xs text-zinc-500">
+                                {item.availableQuantity} available
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      <button
-                        aria-label="Remove item"
-                        onClick={() => removeItem(item.id)}
-                        className="flex min-h-11 min-w-11 shrink-0 items-center justify-center"
-                      >
-                        <Trash className="text-zinc-500" />
-                      </button>
                     </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <label className="mr-1 text-xs text-zinc-500">Pieces</label>
-                      <BulkTableQuantity
-                        variantId={item.id}
-                        maxQuantity={item.availableQuantity}
-                        onChange={updateQuantity}
-                        value={item.quantity}
-                      />
-                      {item.availableQuantity !== undefined && (
-                        <span className="text-xs text-zinc-500">
-                          {item.availableQuantity} available
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  ))}
-                </>
+                    )
+                  })}
+                </div>
               )}
             </div>
 
-            <div className="shrink-0 border-t border-zinc-200 pt-4">
+            {selectedProducts.length > 0 && (
+            <div className="mx-4 mt-6 border-t border-zinc-200 pt-4 xsmall:mx-5">
               <div className="mb-4 flex flex-wrap justify-between gap-2 text-sm">
                 <span>{totals.styles} style(s)</span>
                 <span className="font-semibold" aria-live="polite">
@@ -280,7 +334,7 @@ export default function SelectionDrawer() {
                   <p className="mt-1 font-semibold">Add {piecesRemaining} more {piecesRemaining === 1 ? "piece" : "pieces"} to send your inquiry.</p>
                 </div>
               )}
-              <div className="mb-4 grid gap-3 text-sm">
+              <div className="mb-4 grid gap-2.5 text-sm">
                 <p className="font-semibold text-zinc-950">Your inquiry details</p>
                 <label className="grid gap-1">
                   <span className="text-xs text-zinc-600">Customer Name *</span>
@@ -292,6 +346,7 @@ export default function SelectionDrawer() {
                     onChange={(event) => setContactName(event.target.value)}
                     required
                     value={contactName}
+                    onFocus={keepFocusedFieldVisible}
                   />
                 </label>
                 <label className="grid gap-1">
@@ -305,6 +360,7 @@ export default function SelectionDrawer() {
                     onChange={(event) => setCustomerWhatsapp(event.target.value)}
                     required
                     value={customerWhatsapp}
+                    onFocus={keepFocusedFieldVisible}
                   />
                 </label>
                 <label className="grid gap-1">
@@ -317,16 +373,18 @@ export default function SelectionDrawer() {
                     onChange={(event) => setCountry(event.target.value)}
                     required
                     value={country}
+                    onFocus={keepFocusedFieldVisible}
                   />
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs text-zinc-600">Message (optional)</span>
                   <textarea
                     aria-label="Message"
-                    className="min-h-24 border border-zinc-300 px-3 py-2"
+                    className="h-24 max-h-28 min-h-24 resize-y border border-zinc-300 px-3 py-2"
                     maxLength={2000}
                     onChange={(event) => setMessage(event.target.value)}
                     value={message}
+                    onFocus={keepFocusedFieldVisible}
                   />
                 </label>
               </div>
@@ -341,14 +399,14 @@ export default function SelectionDrawer() {
                   {inquiryError}
                 </p>
               )}
-              <ul className="mb-4 grid gap-1 border-y border-zinc-200 py-3 text-xs leading-5 text-zinc-600">
-                <li>Ready stock in Guangzhou, China</li>
-                <li>Product inspection available</li>
-                <li>Worldwide freight quotation available</li>
-                <li>Confirm stock and shipping on WhatsApp</li>
+              <ul className="mb-4 grid gap-1.5 border-y border-zinc-200 py-3 text-xs leading-5 text-zinc-600">
+                <li>✓ Ready stock in Guangzhou, China</li>
+                <li>✓ Product inspection available</li>
+                <li>✓ Worldwide freight quotation available</li>
+                <li>✓ Confirm stock and shipping on WhatsApp</li>
               </ul>
               <button
-                  className={`min-h-11 w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
+                  className={`min-h-12 w-full bg-zinc-950 px-4 py-3 text-center text-sm font-semibold text-white ${
                   !whatsapp || !items.length || !meetsOrderMinimum || isSubmittingInquiry
                     ? "cursor-not-allowed opacity-40"
                     : "hover:bg-zinc-800"
@@ -363,11 +421,12 @@ export default function SelectionDrawer() {
               <button
                 onClick={() => setClearConfirmationOpen(true)}
                 className="mt-3 min-h-11 w-full text-xs text-zinc-500 underline underline-offset-4"
-                disabled={!items.length && !productDrafts.length}
+                disabled={!items.length}
               >
                 Clear Inquiry List
               </button>
             </div>
+            )}
           </aside>
         </div>
       )}

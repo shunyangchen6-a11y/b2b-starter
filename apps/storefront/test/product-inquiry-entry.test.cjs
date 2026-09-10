@@ -19,9 +19,6 @@ require.extensions[".ts"] = (module, filename) => {
 }
 
 const {
-  addInquiryProductDraft,
-  removeDraftForSelectedProduct,
-  selectionContainsProduct,
   selectionHasQuantityForProduct,
 } = require("../src/lib/selection/inquiry-products.ts")
 const {
@@ -48,19 +45,13 @@ const item = {
   packSize: 5,
 }
 
-test("adds a product once and prevents duplicate Inquiry List drafts", () => {
-  const first = addInquiryProductDraft([], [], draft)
-  const repeated = addInquiryProductDraft(first, [], draft)
-
-  assert.equal(first.length, 1)
-  assert.equal(repeated.length, 1)
-  assert.equal(selectionContainsProduct([], repeated, draft.handle), true)
-})
-
-test("an existing selected variant counts as added and replaces its draft", () => {
-  assert.equal(selectionContainsProduct([item], [], draft.handle), true)
-  assert.deepEqual(removeDraftForSelectedProduct([draft], item), [])
-  assert.deepEqual(addInquiryProductDraft([], [item], draft), [])
+test("zero-piece products never count as Inquiry List products", () => {
+  assert.equal(selectionHasQuantityForProduct([], draft.handle), false)
+  assert.equal(
+    selectionHasQuantityForProduct([{ ...item, quantity: 0 }], draft.handle),
+    false
+  )
+  assert.equal(selectionHasQuantityForProduct([item], draft.handle), true)
 })
 
 test("Inquiry CTA only switches to VIEW INQUIRY for a positive saved quantity", () => {
@@ -109,7 +100,11 @@ test("product CTA opens and targets the existing Inquiry List", () => {
   assert.match(button, /aria-busy=\{loading\}/)
   assert.match(drawer, /data-inquiry-handle/)
   assert.match(drawer, /scrollIntoView/)
-  assert.match(drawer, /Choose sizes &amp; quantities/)
+  assert.match(button, /router\.push/)
+  assert.match(button, /#product-variant-selection/)
+  assert.doesNotMatch(button, /addProductDraft/)
+  assert.match(drawer, /Your inquiry list is empty/)
+  assert.match(drawer, /Browse products and select sizes to start an inquiry/)
 })
 
 test("grouped variant rows and product detail columns remain bounded", () => {

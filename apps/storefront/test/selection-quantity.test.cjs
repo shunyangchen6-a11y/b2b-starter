@@ -101,6 +101,17 @@ test("sanitizes non-five-piece quantities and stale localStorage entries", () =>
   assert.deepEqual(parseStoredSelection("not-json"), [])
 })
 
+test("removes zero-piece variants and products while restoring localStorage", () => {
+  const restored = parseStoredSelection(JSON.stringify([
+    item("zero-one", 0),
+    item("zero-two", "0"),
+    item("selected", 5),
+  ]))
+
+  assert.deepEqual(restored.map((entry) => entry.id), ["selected"])
+  assert.deepEqual(selectionTotals(restored), { styles: 1, pieces: 5, packs: 1 })
+})
+
 test("never turns a stale product style number into a variant SKU", () => {
   const restored = parseStoredSelection(JSON.stringify([{
     id: "variant_stale",
