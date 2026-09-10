@@ -1,8 +1,13 @@
+"use client"
+
 import { clx } from "@medusajs/ui"
 import Image from "next/image"
-import React from "react"
+import React, { useEffect, useState } from "react"
 
-import PlaceholderImage from "@/modules/common/icons/placeholder-image"
+import {
+  getProductImageUrl,
+  WHOLESALE_PLACEHOLDER_IMAGE,
+} from "@/lib/util/product-image"
 
 type ThumbnailProps = {
   thumbnail?: string | null
@@ -12,6 +17,7 @@ type ThumbnailProps = {
   isFeatured?: boolean
   className?: string
   type?: "preview" | "full"
+  framed?: boolean
   "data-testid"?: string
 }
 
@@ -23,15 +29,18 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   className,
   "data-testid": dataTestid,
   type,
+  framed = false,
 }) => {
-  const initialImage = thumbnail || images?.[0]?.url
+  const initialImage = getProductImageUrl(thumbnail || images?.[0]?.url)
 
   return (
     <div
-      className={clx("relative w-full overflow-hidden", className, {
-        "aspect-[11/14]": isFeatured,
-        "aspect-[9/16]": !isFeatured && size !== "square",
-        "aspect-[1/1]": size === "square",
+      className={clx("relative w-full", className, {
+        "h-full": framed,
+        "overflow-hidden": !framed,
+        "aspect-[11/14]": !framed && isFeatured,
+        "aspect-[9/16]": !framed && !isFeatured && size !== "square",
+        "aspect-[1/1]": !framed && size === "square",
         "w-[180px]": size === "small",
         "w-[290px]": size === "medium",
         "w-[440px]": size === "large",
@@ -39,7 +48,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
       })}
       data-testid={dataTestid}
     >
-      <ImageOrPlaceholder image={initialImage} size={size} type={type} />
+      <ImageOrPlaceholder image={initialImage} size={size} type={type} framed={framed} />
     </div>
   )
 }
@@ -48,14 +57,39 @@ const ImageOrPlaceholder = ({
   image,
   size,
   type,
-}: Pick<ThumbnailProps, "size" | "type"> & {
+  framed = false,
+}: Pick<ThumbnailProps, "size" | "type" | "framed"> & {
   image?: string
 }) => {
-  return image ? (
+  const [imageSource, setImageSource] = useState(getProductImageUrl(image))
+
+  useEffect(() => {
+    setImageSource(getProductImageUrl(image))
+  }, [image])
+
+  if (framed) {
+    return (
+      <>
+        <div aria-hidden className="absolute inset-0 bg-neutral-100" />
+        <Image
+          src={imageSource}
+          alt="Thumbnail"
+          className="absolute inset-0 h-full w-full object-contain object-center"
+          draggable={false}
+          quality={75}
+          sizes="(max-width: 576px) 50vw, (max-width: 992px) 33vw, 25vw"
+          fill
+          onError={() => setImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
+        />
+      </>
+    )
+  }
+
+  return (
     <Image
-      src={image}
+      src={imageSource}
       alt="Thumbnail"
-      className={clx("absolute inset-0 object-contain", {
+      className={clx("absolute inset-0 h-full w-full object-contain", {
         "p-4": type === "full",
         "p-2": type === "preview",
       })}
@@ -63,11 +97,8 @@ const ImageOrPlaceholder = ({
       quality={50}
       sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
       fill
+      onError={() => setImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
     />
-  ) : (
-    <div className="w-full h-full absolute inset-0 flex items-center justify-center">
-      <PlaceholderImage size={size === "small" ? 16 : 24} />
-    </div>
   )
 }
 

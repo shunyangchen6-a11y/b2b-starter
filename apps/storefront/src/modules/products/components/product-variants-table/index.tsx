@@ -1,154 +1,152 @@
-import { addToCartEventBus } from "@/lib/data/cart-event-bus"
-import { getProductPrice } from "@/lib/util/get-product-price"
-import { HttpTypes, StoreProduct, StoreProductVariant } from "@medusajs/types"
-import { clx, Table } from "@medusajs/ui"
+import { useSelection } from "@/lib/selection/selection-context"
+import {
+  normalizeQuantity,
+  normalizeSelectionQuantity,
+} from "@/lib/selection/quote"
+import { productStyleNumber, variantAvailableQuantity, wholesaleValue } from "@/lib/util/wholesale"
+import { formatWholesaleVariantPrice } from "@/lib/util/get-product-price"
+import { groupVariantsByColor } from "@/lib/util/product-variant-groups"
+import { HttpTypes } from "@medusajs/types"
 import Button from "@/modules/common/components/button"
-import ShoppingBag from "@/modules/common/icons/shopping-bag"
 import { useState } from "react"
 import BulkTableQuantity from "../bulk-table-quantity"
 
 const ProductVariantsTable = ({
   product,
-  region,
+  region: _region,
 }: {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion
 }) => {
-  const [isAdding, setIsAdding] = useState(false)
-  const [lineItemsMap, setLineItemsMap] = useState<
-    Map<
-      string,
-      StoreProductVariant & {
-        product: StoreProduct
-        quantity: number
-      }
-    >
-  >(new Map())
+  const { addItem } = useSelection()
+  const [quantities, setQuantities] = useState<Map<string, number>>(new Map())
 
-  const totalQuantity = Array.from(lineItemsMap.values()).reduce(
-    (acc, curr) => acc + curr.quantity,
+  const totalQuantity = Array.from(quantities.values()).reduce(
+    (total, quantity) => total + normalizeQuantity(quantity),
     0
   )
 
+  const optionValue = (variant: HttpTypes.StoreProductVariant, optionTitle: string) => {
+    const optionId = product.options?.find(
+      (option) => option.title?.toLowerCase() === optionTitle.toLowerCase()
+    )?.id
+    return variant.options?.find((option) => option.option_id === optionId)?.value || "—"
+  }
+
+  const colorOptionId = product.options?.find(
+    (option) => option.title?.toLowerCase() === "color"
+  )?.id
+  const variantGroups = groupVariantsByColor(
+    product.variants || [],
+    colorOptionId
+  )
+
   const handleQuantityChange = (variantId: string, quantity: number) => {
-    setLineItemsMap((prev) => {
-      const newLineItems = new Map(prev)
+    const variant = product.variants?.find((entry) => entry.id === variantId)
+    const availableQuantity = variant?.manage_inventory === false
+      ? Number.MAX_SAFE_INTEGER
+      : variant ? variantAvailableQuantity(variant) : 0
+    const normalizedQuantity = normalizeSelectionQuantity(quantity, availableQuantity)
 
-      if (!prev.get(variantId)) {
-        newLineItems.set(variantId, {
-          ...product.variants?.find((v) => v.id === variantId)!,
-          product,
-          quantity,
-        })
-      } else {
-        newLineItems.set(variantId, {
-          ...prev.get(variantId)!,
-          quantity,
-        })
-      }
-
-      return newLineItems
+    setQuantities((prev) => {
+      const next = new Map(prev)
+      normalizedQuantity > 0
+        ? next.set(variantId, normalizedQuantity)
+        : next.delete(variantId)
+      return next
     })
   }
 
-  const handleAddToCart = async () => {
-    setIsAdding(true)
-
-    const lineItems = Array.from(lineItemsMap.entries()).map(
-      ([variantId, { quantity, ...variant }]) => ({
-        productVariant: {
-          ...variant,
-        },
-        quantity,
+  const handleAddToSelection = () => {
+    quantities.forEach((quantity, variantId) => {
+      const variant = product.variants?.find((entry) => entry.id === variantId)
+      const availableQuantity = variant?.manage_inventory === false
+        ? Number.MAX_SAFE_INTEGER
+        : variant ? variantAvailableQuantity(variant) : 0
+      const normalizedQuantity = normalizeSelectionQuantity(quantity, availableQuantity)
+      if (!variant || normalizedQuantity === 0) return
+      const options = Object.fromEntries((variant.options || []).map((option) => [option.option_id || option.id || "option", option.value || ""]))
+      addItem({
+        id: variant.id,
+        productId: product.id,
+        handle: product.handle || product.id,
+        title: product.title,
+        styleNumber: productStyleNumber(product),
+        variantId: variant.id,
+        sku: variant.sku || "",
+        color: Object.values(options)[0] || wholesaleValue(product.metadata, "color", "Mixed"),
+        size: Object.values(options)[1] || Object.values(options)[0] || "Mixed",
+        quantity: normalizedQuantity,
+        packSize: wholesaleValue(product.metadata, "pack_size", "5") === "10" ? 10 : 5,
+        availableQuantity: Number.isSafeInteger(availableQuantity) ? availableQuantity : undefined,
+        image: product.thumbnail || undefined,
+        unitPrice: formatWholesaleVariantPrice(variant),
       })
-    )
-
-    addToCartEventBus.emitCartAdd({
-      lineItems,
-      regionId: region.id,
     })
-
-    setIsAdding(false)
+    setQuantities(new Map())
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="overflow-x-auto p-px">
-        <Table className="w-full rounded-xl overflow-hidden shadow-borders-base border-none ">
-          <Table.Header className="border-t-0">
-            <Table.Row className="bg-neutral-100 border-none hover:!bg-neutral-100">
-              <Table.HeaderCell className="px-4">SKU</Table.HeaderCell>
-              {product.options?.map((option) => {
-                if (option.title === "Default option") {
-                  return null
-                }
+    <div id="product-variant-selection" className="flex min-w-0 scroll-mt-24 flex-col gap-6">
+      <div className="grid min-w-0 gap-4" data-testid="color-grouped-variants">
+        {variantGroups.map(({ color, variants }) => (
+          <section key={color} className="min-w-0 border border-zinc-200 bg-white">
+            <h3 className="border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-950">
+              {color}
+            </h3>
+            <div className="divide-y divide-zinc-100">
+              {variants.map((variant) => {
+                const availableQuantity = variant.manage_inventory === false
+                  ? undefined
+                  : variantAvailableQuantity(variant)
+
                 return (
-                  <Table.HeaderCell key={option.id} className="px-4 border-x">
-                    {option.title}
-                  </Table.HeaderCell>
+                  <article
+                    key={variant.id}
+                    className="grid min-w-0 grid-cols-2 gap-3 p-4 lg:grid-cols-[minmax(90px,0.65fr)_minmax(120px,0.9fr)_minmax(210px,1.5fr)] lg:items-center"
+                    data-testid="grouped-variant-row"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Size</p>
+                      <p className="mt-1 text-base font-semibold text-zinc-950">{optionValue(variant, "Size")}</p>
+                      <p className="mt-1 truncate text-[11px] text-zinc-400" title={variant.sku || undefined}>
+                        {variant.sku || "SKU unavailable"}
+                      </p>
+                    </div>
+                    <div className="min-w-0 text-right lg:text-left">
+                      <p className="break-words text-sm font-medium text-zinc-900">
+                        {formatWholesaleVariantPrice(variant)}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {typeof availableQuantity === "number"
+                          ? `${availableQuantity} available`
+                          : "Available on request"}
+                      </p>
+                    </div>
+                    <div className="col-span-2 min-w-0 lg:col-span-1">
+                      <BulkTableQuantity
+                        variantId={variant.id}
+                        maxQuantity={availableQuantity}
+                        onChange={handleQuantityChange}
+                      />
+                    </div>
+                  </article>
                 )
               })}
-              <Table.HeaderCell className="px-4 border-x">
-                Price
-              </Table.HeaderCell>
-              <Table.HeaderCell className="px-4">Quantity</Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body className="border-none">
-            {product.variants?.map((variant, index) => {
-              const { variantPrice } = getProductPrice({
-                product,
-                variantId: variant.id,
-              })
-
-              return (
-                <Table.Row
-                  key={variant.id}
-                  className={clx({
-                    "border-b-0": index === product.variants?.length! - 1,
-                  })}
-                >
-                  <Table.Cell className="px-4">{variant.sku}</Table.Cell>
-                  {variant.options?.map((option, index) => {
-                    if (option.value === "Default option value") {
-                      return null
-                    }
-                    return (
-                      <Table.Cell key={option.id} className="px-4 border-x">
-                        {option.value}
-                      </Table.Cell>
-                    )
-                  })}
-                  <Table.Cell className="px-4 border-x">
-                    {variantPrice?.calculated_price}
-                  </Table.Cell>
-                  <Table.Cell className="pl-1 !pr-1">
-                    <BulkTableQuantity
-                      variantId={variant.id}
-                      onChange={handleQuantityChange}
-                    />
-                  </Table.Cell>
-                </Table.Row>
-              )
-            })}
-          </Table.Body>
-        </Table>
+            </div>
+          </section>
+        ))}
       </div>
       <Button
-        onClick={handleAddToCart}
-        variant="primary"
-        className="w-full h-10"
-        isLoading={isAdding}
+        onClick={handleAddToSelection}
+        variant="secondary"
+        className="min-h-11 w-full md:h-10"
         disabled={totalQuantity === 0}
         data-testid="add-product-button"
       >
-        <ShoppingBag
-          className="text-white"
-          fill={totalQuantity === 0 ? "none" : "#fff"}
-        />
         {totalQuantity === 0
-          ? "Choose product variant(s) above"
-          : "Add to cart"}
+          ? "Choose sizes and quantities"
+          : `Save ${totalQuantity} pieces to Inquiry List`}
       </Button>
     </div>
   )

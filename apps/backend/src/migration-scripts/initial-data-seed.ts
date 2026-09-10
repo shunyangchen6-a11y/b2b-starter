@@ -35,6 +35,25 @@ export default async function initial_data_seed({
 
   const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
 
+  // The seed is also used by local developers after a database has already
+  // been initialized. Avoid creating a second set of regions and related
+  // records when this starter data is present.
+  const query = container.resolve(ContainerRegistrationKeys.QUERY) as any;
+  const { data: existingRegions } = await query.graph({
+    entity: "region",
+    fields: ["id", "countries.iso_2"],
+  });
+  const hasSeedRegion = existingRegions?.some((region: any) =>
+    countries.every((code) =>
+      region.countries?.some((country: { iso_2?: string }) => country.iso_2 === code)
+    )
+  );
+
+  if (hasSeedRegion) {
+    logger.info("Starter region already exists. Skipping duplicate seed data.");
+    return;
+  }
+
   logger.info("Seeding store data...");
   const {
     result: [defaultSalesChannel],

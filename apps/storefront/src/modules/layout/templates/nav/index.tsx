@@ -1,89 +1,148 @@
-import { retrieveCart } from "@/lib/data/cart"
-import { retrieveCustomer } from "@/lib/data/customer"
-import AccountButton from "@/modules/account/components/account-button"
-import CartButton from "@/modules/cart/components/cart-button"
-import LocalizedClientLink from "@/modules/common/components/localized-client-link"
-import FilePlus from "@/modules/common/icons/file-plus"
-import LogoIcon from "@/modules/common/icons/logo"
-import { MegaMenuWrapper } from "@/modules/layout/components/mega-menu"
-import { RequestQuoteConfirmation } from "@/modules/quotes/components/request-quote-confirmation"
-import { RequestQuotePrompt } from "@/modules/quotes/components/request-quote-prompt"
-import SkeletonAccountButton from "@/modules/skeletons/components/skeleton-account-button"
-import SkeletonCartButton from "@/modules/skeletons/components/skeleton-cart-button"
-import SkeletonMegaMenu from "@/modules/skeletons/components/skeleton-mega-menu"
-import { Suspense } from "react"
+"use client"
 
-export async function NavigationHeader() {
-  const customer = await retrieveCustomer().catch(() => null)
-  const cart = await retrieveCart()
+import LocalizedClientLink from "@/modules/common/components/localized-client-link"
+import SelectionDrawer from "@/modules/selection/components/selection-drawer"
+import { useEffect, useState } from "react"
+
+const primaryLinks = [
+  { label: "New Arrivals", href: "/store?sortBy=created_at" },
+  { label: "Cargo Pants", href: "/categories/cargo-pants" },
+  { label: "Casual Pants", href: "/categories/casual-pants" },
+  { label: "Joggers", href: "/categories/jogger-pants" },
+  { label: "Jeans", href: "/categories/jeans" },
+  { label: "All Products", href: "/store" },
+]
+
+const MenuIcon = () => (
+  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+    <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.75" />
+  </svg>
+)
+
+const SearchIcon = () => (
+  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+    <circle cx="10.75" cy="10.75" r="6.5" stroke="currentColor" strokeWidth="1.75" />
+    <path d="m16 16 4.25 4.25" stroke="currentColor" strokeWidth="1.75" />
+  </svg>
+)
+
+const CloseIcon = () => (
+  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+    <path d="M5 5 19 19M19 5 5 19" stroke="currentColor" strokeWidth="1.75" />
+  </svg>
+)
+
+export function NavigationHeader() {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "")
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [menuOpen])
 
   return (
-    <div className="sticky top-0 inset-x-0 group bg-white text-zinc-900 small:p-4 p-2 text-sm border-b duration-200 border-ui-border-base z-50">
-      <header className="flex w-full content-container relative small:mx-auto justify-between">
-        <div className="small:mx-auto flex justify-between items-center min-w-full">
-          <div className="flex items-center small:space-x-4">
-            <LocalizedClientLink
-              className="hover:text-ui-fg-base flex items-center w-fit"
-              href="/"
+    <>
+      <header className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white text-zinc-950">
+        <div className="content-container grid h-16 grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-1 medium:flex medium:h-[76px] medium:justify-between">
+          <div className="flex min-w-0 items-center medium:hidden">
+            <button
+              type="button"
+              aria-expanded={menuOpen}
+              aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+              className="flex min-h-11 min-w-11 items-center justify-center"
+              onClick={() => setMenuOpen((open) => !open)}
             >
-              <h1 className="small:text-base text-sm font-medium flex items-center">
-                <LogoIcon className="inline mr-2" />
-                Medusa B2B Starter
-              </h1>
-            </LocalizedClientLink>
-
-            <nav>
-              <ul className="space-x-4 hidden small:flex">
-                <li>
-                  <Suspense fallback={<SkeletonMegaMenu />}>
-                    <MegaMenuWrapper />
-                  </Suspense>
-                </li>
-              </ul>
-            </nav>
+              {menuOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
           </div>
-          <div className="flex justify-end items-center gap-2">
-            <div className="relative mr-2 hidden small:inline-flex">
-              <input
-                disabled
-                type="text"
-                placeholder="Search for products"
-                className="bg-gray-100 text-zinc-900 px-4 py-2 rounded-full pr-10 shadow-borders-base hidden small:inline-block hover:cursor-not-allowed"
-                title="Install a search provider to enable product search"
-              />
-            </div>
 
-            <div className="h-4 w-px bg-neutral-300" />
+          <LocalizedClientLink
+            className="flex min-w-0 flex-col items-center justify-self-center whitespace-nowrap text-zinc-950 medium:justify-self-auto"
+            href="/"
+          >
+            <span className="font-sans text-[19px] font-semibold leading-none tracking-[0.08em] xsmall:text-[21px] medium:text-[26px]">
+              四季服饰
+            </span>
+            <span className="mt-1 hidden text-[7px] font-semibold uppercase leading-none tracking-[0.22em] text-zinc-600 small:block medium:text-[8px]">
+              FOUR SEASONS CLOTHING
+            </span>
+          </LocalizedClientLink>
 
-            {customer && cart?.items && cart.items.length > 0 ? (
-              <RequestQuoteConfirmation>
-                <button
-                  className="flex gap-1.5 items-center rounded-2xl bg-none shadow-none border-none hover:bg-neutral-100 px-2 py-1"
-                  // disabled={isPendingApproval}
-                >
-                  <FilePlus />
-                  <span className="hidden small:inline-block">Quote</span>
-                </button>
-              </RequestQuoteConfirmation>
-            ) : (
-              <RequestQuotePrompt>
-                <button className="flex gap-1.5 items-center rounded-2xl bg-none shadow-none border-none hover:bg-neutral-100 px-2 py-1">
-                  <FilePlus />
-                  <span className="hidden small:inline-block">Quote</span>
-                </button>
-              </RequestQuotePrompt>
+          <nav aria-label="Primary navigation" className="hidden min-w-0 flex-1 justify-center px-4 medium:flex large:px-6">
+            <ul className="flex items-center justify-center gap-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-700 large:gap-5 large:text-[11px] large:tracking-[0.11em]">
+              {primaryLinks.map((link) => (
+                <li key={link.href}>
+                  <LocalizedClientLink className="whitespace-nowrap transition-colors hover:text-zinc-950" href={link.href}>
+                    {link.label}
+                  </LocalizedClientLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 small:gap-3">
+            <LocalizedClientLink
+              href="/store"
+              aria-label="Search products"
+              className="hidden min-h-11 items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-zinc-700 hover:text-zinc-950 medium:flex"
+            >
+              <SearchIcon />
+              <span>Search</span>
+            </LocalizedClientLink>
+            {whatsappNumber && (
+              <a
+                className="hidden min-h-11 items-center text-[11px] font-semibold uppercase tracking-[0.11em] text-zinc-700 hover:text-zinc-950 medium:flex"
+                href={`https://wa.me/${whatsappNumber}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                WhatsApp
+              </a>
             )}
-
-            <Suspense fallback={<SkeletonAccountButton />}>
-              <AccountButton customer={customer} />
-            </Suspense>
-
-            <Suspense fallback={<SkeletonCartButton />}>
-              <CartButton />
-            </Suspense>
+            <SelectionDrawer />
           </div>
         </div>
       </header>
-    </div>
+
+      {menuOpen && (
+        <div className="fixed inset-x-0 bottom-0 top-16 z-40 flex flex-col bg-white medium:hidden" role="dialog" aria-label="Navigation menu">
+          <nav className="content-container flex min-h-0 flex-1 flex-col overflow-y-auto py-6" aria-label="Mobile navigation">
+            <ul className="divide-y divide-zinc-200 border-y border-zinc-200">
+              {primaryLinks.map((link) => (
+                <li key={link.href}>
+                  <LocalizedClientLink
+                    className="flex min-h-14 items-center justify-between text-sm font-semibold uppercase tracking-[0.1em] text-zinc-950"
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {link.label}
+                    <span aria-hidden="true">↗</span>
+                  </LocalizedClientLink>
+                </li>
+              ))}
+            </ul>
+            {whatsappNumber && (
+              <a
+                className="wholesale-button mt-6 w-full"
+                href={`https://wa.me/${whatsappNumber}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Contact on WhatsApp
+              </a>
+            )}
+            <p className="mt-auto pt-8 text-xs leading-5 text-zinc-500">
+              Ready stock menswear wholesale for global buyers.
+            </p>
+          </nav>
+        </div>
+      )}
+    </>
   )
 }

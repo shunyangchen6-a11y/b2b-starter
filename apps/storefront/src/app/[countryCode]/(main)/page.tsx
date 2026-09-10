@@ -5,9 +5,8 @@ import { Metadata } from "next"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
-  title: "Medusa Next.js Starter Template",
-  description:
-    "A performant frontend ecommerce starter template with Next.js 14 and Medusa.",
+  title: "FOUR SEASONS CLOTHING | Menswear Wholesale",
+  description: "Ready-stock men's clothing wholesale. Build an inquiry list and request a WhatsApp quote.",
 }
 
 export default async function Home(props: {
@@ -18,11 +17,15 @@ export default async function Home(props: {
   const { countryCode } = params
 
   return (
-    <div className="flex flex-col gap-y-2 m-2">
+    <div className="my-2 flex w-full min-w-0 max-w-full flex-col gap-y-8 overflow-x-clip">
       <Hero />
-      <Suspense fallback={<SkeletonFeaturedProducts />}>
-        <FeaturedProducts countryCode={countryCode} />
-      </Suspense>
+      <section className="content-container grid w-full min-w-0 max-w-full grid-cols-2 gap-2 text-center md:grid-cols-4">
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Wholesale</p><p className="break-words text-xs text-zinc-500">Contact for quotation</p></div>
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Ready Stock</p><p className="break-words text-xs text-zinc-500">Live confirmation on WhatsApp</p></div>
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Mixed Styles</p><p className="break-words text-xs text-zinc-500">Build your own selection</p></div>
+        <div className="min-w-0 border border-zinc-200 p-4"><p className="break-words font-semibold">Fast Shipping</p><p className="break-words text-xs text-zinc-500">Freight quote on request</p></div>
+      </section>
+      <section id="latest-arrivals"><Suspense fallback={<SkeletonFeaturedProducts />}><FeaturedProducts countryCode={countryCode} /></Suspense></section>
     </div>
   )
 }

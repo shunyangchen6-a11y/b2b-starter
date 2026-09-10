@@ -7,8 +7,11 @@ checkEnvVariables()
  */
 const nextConfig = {
   reactStrictMode: true,
-  typescript: {
-    ignoreBuildErrors: true,
+  experimental: {
+    // The storefront pre-renders product pages from the Medusa API. Keep build
+    // requests serialized so remote development databases are not overwhelmed.
+    staticGenerationMaxConcurrency: 1,
+    staticGenerationMinPagesPerWorker: 25,
   },
   logging: {
     fetches: {

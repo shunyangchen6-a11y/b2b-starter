@@ -1,10 +1,14 @@
 "use client"
 
-import { ArrowLeftMini, ArrowRightMini } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { clx, IconButton } from "@medusajs/ui"
+import { clx } from "@medusajs/ui"
 import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
+
+import {
+  getProductImageUrl,
+  WHOLESALE_PLACEHOLDER_IMAGE,
+} from "@/lib/util/product-image"
 
 type ImageGalleryProps = {
   product: HttpTypes.StoreProduct
@@ -21,6 +25,25 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
     }
   )
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [selectedImageSource, setSelectedImageSource] = useState(() =>
+    getProductImageUrl(selectedImage.url)
+  )
+  const [zoomOpen, setZoomOpen] = useState(false)
+
+  useEffect(() => {
+    setSelectedImageSource(getProductImageUrl(selectedImage.url))
+  }, [selectedImage])
+
+  useEffect(() => {
+    if (!zoomOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [zoomOpen])
 
   const handleArrowClick = useCallback(
     (direction: "left" | "right") => {
@@ -53,6 +76,11 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && zoomOpen) {
+        setZoomOpen(false)
+        return
+      }
+
       if (document.activeElement instanceof HTMLInputElement) {
         return
       }
@@ -69,69 +97,98 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [handleArrowClick])
+  }, [handleArrowClick, zoomOpen])
 
   return (
-    <div className="flex flex-col justify-end items-center bg-neutral-100 p-8 pt-0 gap-6 w-full h-full">
-      <div
-        className="relative aspect-[29/34] w-full overflow-hidden"
-        id={selectedImage.id}
-      >
-        <div className="flex p-48">
-          {!!selectedImage.url && (
-            <Image
-              src={selectedImage.url}
-              priority
-              className="absolute inset-0 rounded-rounded p-20 overflow-visible object-contain"
-              alt={(selectedImage.metadata?.alt as string) || ""}
-              fill
-              sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
-            />
-          )}
+    <>
+      <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-4 large:grid-cols-[72px_minmax(0,1fr)] large:items-start">
+        <div className="order-2 min-w-0 large:order-1 large:sticky large:top-[116px] large:max-h-[calc(100vh-132px)] large:overflow-y-auto">
+          <ul className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 large:flex-col large:overflow-x-hidden large:pb-0" aria-label="Product images">
+            {images.map((image, index) => (
+              <li key={image.id} className="shrink-0">
+                <button
+                  type="button"
+                  className={clx(
+                    "relative block aspect-[4/5] w-14 overflow-hidden bg-neutral-100 large:w-[72px]",
+                    index === selectedImageIndex
+                      ? "border border-zinc-950"
+                      : "border border-transparent"
+                  )}
+                  onClick={() => handleImageClick(image)}
+                  aria-label={`View product image ${index + 1}`}
+                  aria-current={index === selectedImageIndex ? "true" : undefined}
+                >
+                  <Image
+                    src={getProductImageUrl(image.url)}
+                    alt={(image.metadata?.alt as string) || `Wholesale product image ${index + 1}`}
+                    fill
+                    quality={65}
+                    sizes="72px"
+                    className="h-full w-full object-contain object-center"
+                    onError={(event) => {
+                      event.currentTarget.src = WHOLESALE_PLACEHOLDER_IMAGE
+                    }}
+                  />
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
+
+        <button
+          type="button"
+          className="group relative order-1 aspect-[4/5] w-full min-w-0 cursor-zoom-in overflow-hidden bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 large:order-2"
+          id={selectedImage.id}
+          onClick={() => setZoomOpen(true)}
+          aria-label="Enlarge product image"
+        >
+          <Image
+            src={selectedImageSource}
+            priority
+            className="h-full w-full object-contain object-center"
+            alt={(selectedImage.metadata?.alt as string) || "Wholesale product image"}
+            fill
+            quality={85}
+            sizes="(max-width: 1023px) 100vw, 58vw"
+            onError={() => setSelectedImageSource(WHOLESALE_PLACEHOLDER_IMAGE)}
+          />
+          <span className="absolute bottom-4 right-4 bg-white/90 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+            View larger
+          </span>
+        </button>
       </div>
-      <div className="flex small:flex-row flex-col-reverse gap-y-3 justify-between w-full">
-        {images.length > 1 && (
-          <div className="flex flex-row gap-x-2 self-end small:self-auto">
-            <IconButton
-              disabled={selectedImageIndex === 0}
-              className="rounded-full items-center justify-center"
-              onClick={() => handleArrowClick("left")}
-            >
-              <ArrowLeftMini />
-            </IconButton>
-            <IconButton
-              disabled={selectedImageIndex === images.length - 1}
-              className="rounded-full items-center justify-center"
-              onClick={() => handleArrowClick("right")}
-            >
-              <ArrowRightMini />
-            </IconButton>
+
+      {zoomOpen && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 p-4 md:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Enlarged product image"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setZoomOpen(false)
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Close enlarged image"
+            onClick={() => setZoomOpen(false)}
+            className="absolute right-4 top-4 flex min-h-11 min-w-11 items-center justify-center bg-white text-2xl text-zinc-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            ×
+          </button>
+          <div className="relative h-full w-full max-w-6xl">
+            <Image
+              src={selectedImageSource}
+              alt={(selectedImage.metadata?.alt as string) || "Enlarged wholesale product image"}
+              fill
+              quality={95}
+              sizes="100vw"
+              className="object-contain object-center"
+            />
           </div>
-        )}
-        <ul className="flex flex-row gap-x-4 overflow-x-auto">
-          {images.map((image, index) => (
-            <li
-              key={image.id}
-              className="flex aspect-[1/1] w-8 h-8 rounded-rounded"
-              onClick={() => handleImageClick(image)}
-              role="button"
-            >
-              <Image
-                src={image.url}
-                alt={(image.metadata?.alt as string) || ""}
-                height={32}
-                width={32}
-                className={clx(
-                  index === selectedImageIndex ? "opacity-100" : "opacity-40",
-                  "hover:opacity-100 object-contain"
-                )}
-              />
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 

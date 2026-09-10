@@ -2,6 +2,51 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+@layer base {
+  :root {
+    --fs-ink: #111111;
+    --fs-canvas: #ffffff;
+    --fs-surface: #f4f4f2;
+    --fs-muted: #6b6b6b;
+    --fs-line: #e7e5e1;
+    --fs-warm-gray: #d9d2c6;
+    --fs-low-stock: #8a6a38;
+  }
+
+  html {
+    background: var(--fs-canvas);
+    color: var(--fs-ink);
+    max-width: 100%;
+    overflow-x: clip;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+    background: var(--fs-canvas);
+    color: var(--fs-ink);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input,
+  textarea,
+  select {
+    border-radius: 0;
+  }
+}
+
 @layer utilities {
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
@@ -51,11 +96,44 @@
 
 @layer components {
   .content-container {
-    @apply max-w-[1440px] w-full mx-auto px-6;
+    @apply mx-auto w-full min-w-0 max-w-full px-4 small:px-6 large:max-w-[1440px] large:px-8;
   }
 
   .contrast-btn {
-    @apply px-4 py-2 border border-black rounded-full hover:bg-black hover:text-white transition-colors duration-200 ease-in;
+    @apply min-h-11 border border-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] hover:bg-black hover:text-white transition-colors duration-200 ease-in;
+  }
+
+  .wholesale-button {
+    @apply inline-flex min-h-11 items-center justify-center border border-zinc-950 bg-zinc-950 px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition-colors duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .wholesale-button-secondary {
+    @apply inline-flex min-h-11 items-center justify-center border border-zinc-300 bg-white px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-950 transition-colors duration-200 hover:border-zinc-950 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .wholesale-input {
+    @apply min-h-12 w-full border border-zinc-300 bg-white px-3 text-sm text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-950;
+  }
+
+  .wholesale-status {
+    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em];
+  }
+
+  .wholesale-status::before {
+    content: "";
+    @apply h-1.5 w-1.5 rounded-full bg-current;
+  }
+
+  .wholesale-status--in-stock {
+    @apply text-emerald-700;
+  }
+
+  .wholesale-status--low-stock {
+    color: var(--fs-low-stock);
+  }
+
+  .wholesale-status--sold-out {
+    @apply text-zinc-500;
   }
 
   .text-xsmall-regular {

@@ -5,6 +5,11 @@ import { getAuthHeaders, getCacheOptions } from "@/lib/data/cookies"
 import { getRegion } from "@/lib/data/regions"
 import { sortProducts } from "@/lib/util/sort-products"
 import { SortOptions } from "@/modules/store/components/refinement-list/sort-products"
+import {
+  filterWholesaleCatalogProducts,
+  filterWholesaleProducts,
+  WholesaleFilters,
+} from "@/lib/util/wholesale-filters"
 import { HttpTypes } from "@medusajs/types"
 
 export const getProductsById = async ({
@@ -106,7 +111,8 @@ export const listProducts = async ({
           limit,
           offset,
           region_id: region.id,
-          fields: "*variants.calculated_price,*variants.options",
+          fields:
+            "*variants.calculated_price,*variants.options,+variants.inventory_quantity,+metadata,*categories,*options",
           ...queryParams,
         },
         headers,
@@ -137,6 +143,7 @@ export const listProductsWithSort = async ({
   sortBy = "created_at",
   countryCode,
   optionValueIds,
+  wholesaleFilters,
 }: {
   page?: number
   queryParams?: HttpTypes.FindParams &
@@ -144,6 +151,7 @@ export const listProductsWithSort = async ({
   sortBy?: SortOptions
   countryCode: string
   optionValueIds?: string[]
+  wholesaleFilters?: WholesaleFilters
 }): Promise<{
   response: { products: HttpTypes.StoreProduct[]; count: number }
   nextPage: number | null
@@ -169,7 +177,13 @@ export const listProductsWithSort = async ({
     countryCode,
   })
 
-  const sortedProducts = sortProducts(products, sortBy)
+  const catalogProducts = filterWholesaleCatalogProducts(products)
+  const sortedProducts = sortProducts(
+    wholesaleFilters
+      ? filterWholesaleProducts(catalogProducts, wholesaleFilters)
+      : catalogProducts,
+    sortBy
+  )
 
   // When filtering by option_value_id, the API's `count` may not reflect the
   // filtered set in client-side sort flows that pre-fetch a page of 100.

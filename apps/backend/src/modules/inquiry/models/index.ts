@@ -1,0 +1,1 @@
+export { Inquiry } from "./inquiry"

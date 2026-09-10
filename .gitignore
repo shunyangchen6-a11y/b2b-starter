@@ -43,6 +43,18 @@ yarn-error.log*
 # Turbo
 .turbo
 
+# Local tool caches
+.cache
+.cache*/
+.pnpm-store
+
+# Local product-import and generated-media working files
+preview-import/
+wholesale-csv-templates/
+output/
+black-denim-approved-hero.png
+blue-denim-approved-hero.png
+
 # vercel
 .vercel
 

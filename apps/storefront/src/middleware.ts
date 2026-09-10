@@ -94,16 +94,33 @@ async function getCountryCode(
   }
 }
 
-async function setCacheId(request: NextRequest, response: NextResponse) {
+function getCacheId(request: NextRequest) {
   const cacheId = request.nextUrl.searchParams.get("_medusa_cache_id")
 
   if (cacheId) {
-    return cacheId
+    return { cacheId, shouldSetCookie: false }
   }
 
-  const newCacheId = crypto.randomUUID()
-  response.cookies.set("_medusa_cache_id", newCacheId, { maxAge: 60 * 60 * 24 })
-  return newCacheId
+  const cacheIdCookie = request.cookies.get("_medusa_cache_id")
+
+  return {
+    cacheId: cacheIdCookie?.value ?? crypto.randomUUID(),
+    shouldSetCookie: !cacheIdCookie,
+  }
+}
+
+function setCacheId(
+  response: NextResponse,
+  cacheId: string,
+  shouldSetCookie: boolean
+) {
+  if (shouldSetCookie) {
+    response.cookies.set("_medusa_cache_id", cacheId, {
+      maxAge: 60 * 60 * 24,
+    })
+  }
+
+  return response
 }
 
 /**
@@ -113,50 +130,59 @@ export async function middleware(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const cartId = searchParams.get("cart_id")
   const checkoutStep = searchParams.get("step")
-  const cacheIdCookie = request.cookies.get("_medusa_cache_id")
-  const cartIdCookie = request.cookies.get("_medusa_cart_id")
-
-  let redirectUrl = request.nextUrl.href
-
-  let response = NextResponse.redirect(redirectUrl, 307)
-
-  // Set a cache id to invalidate the cache for this instance only
-  const cacheId = await setCacheId(request, response)
+  const { cacheId, shouldSetCookie } = getCacheId(request)
 
   const regionMap = await getRegionMap(cacheId)
 
   const countryCode = regionMap && (await getCountryCode(request, regionMap))
+  const urlCountryCode = request.nextUrl.pathname.split("/")[1]?.toLowerCase()
 
-  const urlHasCountryCode =
-    countryCode && request.nextUrl.pathname.split("/")[1].includes(countryCode)
-
-  // check if one of the country codes is in the url
-  if (urlHasCountryCode && (!cartId || cartIdCookie) && cacheIdCookie) {
-    return NextResponse.next()
-  }
+  const urlHasCountryCode = Boolean(
+    urlCountryCode && regionMap.has(urlCountryCode)
+  )
 
   // check if the url is a static asset
   if (request.nextUrl.pathname.includes(".")) {
     return NextResponse.next()
   }
 
-  const redirectPath =
-    request.nextUrl.pathname === "/" ? "" : request.nextUrl.pathname
+  const looksLikeCountryCode = Boolean(urlCountryCode?.match(/^[a-z]{2}$/))
+  const redirectPath = looksLikeCountryCode
+    ? request.nextUrl.pathname.replace(/^\/[^/]+/, "") || "/"
+    : request.nextUrl.pathname === "/"
+      ? ""
+      : request.nextUrl.pathname
 
   const queryString = request.nextUrl.search ? request.nextUrl.search : ""
+  let redirectUrl: string | undefined
 
   // If no country code is set, we redirect to the relevant region.
   if (!urlHasCountryCode && countryCode) {
     redirectUrl = `${request.nextUrl.origin}/${countryCode}${redirectPath}${queryString}`
-    response = NextResponse.redirect(`${redirectUrl}`, 307)
   }
 
   // If a cart_id is in the params, we set it as a cookie and redirect to the address step.
   if (cartId && !checkoutStep) {
-    redirectUrl = `${redirectUrl}&step=address`
-    response = NextResponse.redirect(`${redirectUrl}`, 307)
-    response.cookies.set("_medusa_cart_id", cartId, { maxAge: 60 * 60 * 24 })
+    const cartUrl = new URL(redirectUrl ?? request.nextUrl.href)
+    cartUrl.searchParams.set("step", "address")
+    redirectUrl = cartUrl.href
   }
+
+  if (redirectUrl) {
+    const response = NextResponse.redirect(redirectUrl, 307)
+    setCacheId(response, cacheId, shouldSetCookie)
+
+    if (cartId && !checkoutStep) {
+      response.cookies.set("_medusa_cart_id", cartId, {
+        maxAge: 60 * 60 * 24,
+      })
+    }
+
+    return response
+  }
+
+  const response = NextResponse.next()
+  setCacheId(response, cacheId, shouldSetCookie)
 
   return response
 }

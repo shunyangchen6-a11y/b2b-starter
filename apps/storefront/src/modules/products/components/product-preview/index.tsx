@@ -1,10 +1,10 @@
-import { getProductPrice } from "@/lib/util/get-product-price"
+import { productStyleNumber, wholesaleStockStatus } from "@/lib/util/wholesale"
+import { formatWholesaleProductPrice } from "@/lib/util/get-product-price"
 import { HttpTypes } from "@medusajs/types"
 import { Text, clx } from "@medusajs/ui"
 import LocalizedClientLink from "@/modules/common/components/localized-client-link"
 import Thumbnail from "../thumbnail"
-import PreviewAddToCart from "./preview-add-to-cart"
-import PreviewPrice from "./price"
+import ProductInquiryButton from "../product-inquiry-button"
 
 export default async function ProductPreview({
   product,
@@ -19,59 +19,59 @@ export default async function ProductPreview({
     return null
   }
 
-  const { cheapestPrice } = getProductPrice({
-    product,
-  })
-
-  const inventoryQuantity = product.variants?.reduce((acc, variant) => {
-    return acc + (variant?.inventory_quantity || 0)
-  }, 0)
+  const stockStatus = wholesaleStockStatus(product)
+  const priceLabel = formatWholesaleProductPrice(product)
+  const sizes = product.variants?.map((variant) => variant.options?.map((option) => option.value).filter(Boolean).join(" / ")).filter(Boolean).slice(0, 3)
 
   return (
-    <LocalizedClientLink href={`/products/${product.handle}`} className="group">
-      <div
-        data-testid="product-wrapper"
-        className="flex flex-col gap-4 relative aspect-[3/5] w-full overflow-hidden p-4 bg-white shadow-borders-base rounded-lg group-hover:shadow-[0_0_0_4px_rgba(0,0,0,0.1)] transition-shadow ease-in-out duration-150"
-      >
-        <div className="w-full h-full p-10">
+    <article
+      data-testid="product-wrapper"
+      className="relative flex min-w-0 w-full flex-col bg-white"
+    >
+      <LocalizedClientLink href={`/products/${product.handle}`} className="group flex min-w-0 flex-1 flex-col">
+        <div data-testid="product-image-frame" className="relative aspect-[4/5] w-full overflow-hidden bg-neutral-100">
           <Thumbnail
             thumbnail={product.thumbnail}
             images={product.images}
-            size="square"
+            size="full"
             isFeatured={isFeatured}
+            framed
           />
         </div>
-        <div className="flex flex-col txt-compact-medium">
-          <Text className="text-neutral-600 text-xs">BRAND</Text>
-          <Text className="text-ui-fg-base" data-testid="product-title">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 border-t border-zinc-100 pt-3 txt-compact-medium">
+          <Text className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Style {productStyleNumber(product)}</Text>
+          <Text className="min-h-10 line-clamp-2 break-words text-sm font-medium leading-5 text-zinc-950" data-testid="product-title">
             {product.title}
           </Text>
-        </div>
-        <div className="flex flex-col gap-0">
-          {cheapestPrice && <PreviewPrice price={cheapestPrice} />}
-          <Text className="text-neutral-600 text-[0.6rem]">Excl. VAT</Text>
-        </div>
-        <div className="flex justify-between">
-          <div className="flex flex-row gap-1 items-center">
-            <span
-              className={clx({
-                "text-green-500": inventoryQuantity && inventoryQuantity > 50,
-                "text-orange-500":
-                  inventoryQuantity &&
-                  inventoryQuantity <= 50 &&
-                  inventoryQuantity > 0,
-                "text-red-500": inventoryQuantity === 0,
+          <Text
+            className="break-words text-base font-semibold leading-5 text-zinc-950"
+            data-testid="wholesale-product-price"
+          >
+            {priceLabel}
+          </Text>
+          <div className="mt-auto flex min-w-0 items-end justify-between gap-2 pt-1">
+            <Text
+              className={clx("wholesale-status", {
+                "wholesale-status--in-stock": stockStatus === "In Stock",
+                "wholesale-status--low-stock": stockStatus === "Low Stock",
+                "wholesale-status--sold-out": stockStatus === "Sold Out",
               })}
             >
-              •
-            </span>
-            <Text className="text-neutral-600 text-xs">
-              {inventoryQuantity} left
+              {stockStatus}
             </Text>
+            <Text className="max-w-[45%] truncate text-[11px] text-zinc-500">{sizes?.join(" · ") || "Sizes on request"}</Text>
           </div>
-          <PreviewAddToCart product={product} region={region} />
         </div>
-      </div>
-    </LocalizedClientLink>
+      </LocalizedClientLink>
+      <ProductInquiryButton
+        productId={product.id}
+        handle={product.handle || product.id}
+        title={product.title}
+        styleNumber={productStyleNumber(product)}
+        image={product.thumbnail || undefined}
+        disabled={stockStatus === "Sold Out"}
+        className="mt-3"
+      />
+    </article>
   )
 }

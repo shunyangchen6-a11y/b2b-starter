@@ -7,9 +7,9 @@ const Layout: React.FC<{
   children: React.ReactNode
 }> = ({ children }) => {
   return (
-    <div>
+    <div className="w-full min-w-0 max-w-full overflow-x-clip">
       <NavigationHeader />
-      <main className="relative">{children}</main>
+      <main className="relative w-full min-w-0 max-w-full">{children}</main>
       <Footer />
     </div>
   )
