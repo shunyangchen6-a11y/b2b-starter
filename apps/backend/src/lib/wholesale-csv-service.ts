@@ -17,12 +17,34 @@ import {
   WholesaleCsvRow,
 } from "./wholesale-csv"
 
-type ExistingVariant = { id: string; sku: string | null; inventory_items?: { inventory_item_id: string }[] }
+type VariantPrice = {
+  id?: string
+  currency_code?: string | null
+  amount?: unknown
+  min_quantity?: unknown
+  max_quantity?: unknown
+  price_set_id?: string
+  price_list_id?: string | null
+}
+type ExistingVariant = {
+  id: string
+  sku: string | null
+  inventory_items?: { inventory_item_id: string }[]
+  price_set?: { id?: string; prices?: VariantPrice[] } | null
+}
 type ExistingProduct = { id: string; handle: string; metadata?: Record<string, unknown> | null; variants?: ExistingVariant[] }
+export type WholesaleCsvPriceChange = {
+  sku: string
+  action: "create" | "update" | "unchanged"
+  current_amount: number | null
+  usd_price: number
+  currency_code: "usd"
+}
 export type WholesaleCsvPreview = {
   rows: WholesaleCsvRow[]
   issues: WholesaleCsvIssue[]
-  summary: { new_products: number; updated_products: number; new_variants: number; updated_variants: number; skipped: number; errors: number }
+  price_changes: WholesaleCsvPriceChange[]
+  summary: { new_products: number; updated_products: number; new_variants: number; updated_variants: number; new_prices: number; updated_prices: number; unchanged_prices: number; skipped: number; errors: number }
 }
 
 const groupRows = (rows: WholesaleCsvRow[]) =>
@@ -34,6 +56,58 @@ const groupRows = (rows: WholesaleCsvRow[]) =>
   }, new Map<string, WholesaleCsvRow[]>()).entries())
 
 const imagesFor = (rows: WholesaleCsvRow[]) => Array.from(new Set(rows.flatMap((row) => row.image_urls ? row.image_urls.split("|").map((url) => url.trim()).filter(Boolean) : [])))
+
+const amountAsNumber = (amount: unknown) => Number(amount ?? 0)
+const isStandardPrice = (price: VariantPrice) => !price.price_list_id
+const isBaseUsdPrice = (price: VariantPrice) =>
+  isStandardPrice(price) && price.currency_code?.toLowerCase() === "usd" && price.min_quantity == null && price.max_quantity == null
+
+export const planUsdPriceChange = (sku: string, prices: VariantPrice[], usdPrice: number): WholesaleCsvPriceChange => {
+  const current = prices.find(isBaseUsdPrice)
+  return {
+    sku,
+    action: !current ? "create" : amountAsNumber(current.amount) === usdPrice ? "unchanged" : "update",
+    current_amount: current ? amountAsNumber(current.amount) : null,
+    usd_price: usdPrice,
+    currency_code: "usd",
+  }
+}
+
+export const mergeUsdStandardPrice = (prices: VariantPrice[], usdPrice: number) => {
+  const standardPrices = prices.filter(isStandardPrice)
+  const currentIndex = standardPrices.findIndex(isBaseUsdPrice)
+  const normalized = standardPrices.map((price) => ({
+    ...(price.id ? { id: price.id } : {}),
+    currency_code: String(price.currency_code || "").toLowerCase(),
+    amount: amountAsNumber(price.amount),
+    ...(price.min_quantity != null ? { min_quantity: amountAsNumber(price.min_quantity) } : {}),
+    ...(price.max_quantity != null ? { max_quantity: amountAsNumber(price.max_quantity) } : {}),
+  }))
+  if (currentIndex >= 0) normalized[currentIndex] = { ...normalized[currentIndex], amount: usdPrice }
+  else normalized.push({ currency_code: "usd", amount: usdPrice })
+  return normalized
+}
+
+const variantPricingBySku = async (container: MedusaContainer, skus: string[]) => {
+  if (!skus.length) return new Map<string, ExistingVariant>()
+  const query = container.resolve(ContainerRegistrationKeys.QUERY) as any
+  const pricingService = container.resolve(Modules.PRICING) as any
+  const { data } = await query.graph({
+    entity: "product_variant",
+    fields: ["id", "sku", "price_set.id"],
+    filters: { sku: { $in: skus } },
+  })
+  const variants = data as ExistingVariant[]
+  const priceSetIds = variants.map((variant) => variant.price_set?.id).filter(Boolean) as string[]
+  const prices = priceSetIds.length ? await pricingService.listPrices(
+    { price_set_id: priceSetIds, price_list_id: null },
+    { take: null }
+  ) as VariantPrice[] : []
+  return new Map<string, ExistingVariant>(variants.filter((variant) => variant.sku).map((variant) => [
+    variant.sku!,
+    { ...variant, price_set: { prices: prices.filter((price) => price.price_set_id === variant.price_set?.id) } },
+  ]))
+}
 
 const wholesaleMetadata = (row: WholesaleCsvRow) => ({
   category: row.category,
@@ -50,7 +124,7 @@ const wholesaleMetadata = (row: WholesaleCsvRow) => ({
 export const previewWholesaleCsv = async (container: MedusaContainer, csv: string): Promise<WholesaleCsvPreview> => {
   const parsed = parseAndValidateWholesaleCsv(csv)
   const issues = [...parsed.issues]
-  if (!parsed.rows.length) return { rows: [], issues, summary: { new_products: 0, updated_products: 0, new_variants: 0, updated_variants: 0, skipped: 0, errors: issues.length } }
+  if (!parsed.rows.length) return { rows: [], issues, price_changes: [], summary: { new_products: 0, updated_products: 0, new_variants: 0, updated_variants: 0, new_prices: 0, updated_prices: 0, unchanged_prices: 0, skipped: 0, errors: issues.length } }
 
   const handles = Array.from(new Set(parsed.rows.map((row) => row.product_handle)))
   const productService = container.resolve(Modules.PRODUCT) as any
@@ -79,6 +153,10 @@ export const previewWholesaleCsv = async (container: MedusaContainer, csv: strin
 
   const invalidLines = new Set(issues.map((issue) => issue.line))
   const rows = parsed.rows.filter((row) => !invalidLines.has(row.line))
+  const pricingBySku = await variantPricingBySku(container, rows.map((row) => row.sku))
+  const priceChanges = rows.filter((row) => row.usd_price).map((row) =>
+    planUsdPriceChange(row.sku, pricingBySku.get(row.sku)?.price_set?.prices || [], Number(row.usd_price))
+  )
   let newProducts = 0; let updatedProducts = 0; let newVariants = 0; let updatedVariants = 0
   groupRows(rows).forEach(([handle, group]) => {
     const existing = existingByHandle.get(handle)
@@ -91,7 +169,14 @@ export const previewWholesaleCsv = async (container: MedusaContainer, csv: strin
   return {
     rows,
     issues,
-    summary: { new_products: newProducts, updated_products: updatedProducts, new_variants: newVariants, updated_variants: updatedVariants, skipped: parsed.rows.length - rows.length, errors: issues.length },
+    price_changes: priceChanges,
+    summary: {
+      new_products: newProducts, updated_products: updatedProducts, new_variants: newVariants, updated_variants: updatedVariants,
+      new_prices: priceChanges.filter((change) => change.action === "create").length,
+      updated_prices: priceChanges.filter((change) => change.action === "update").length,
+      unchanged_prices: priceChanges.filter((change) => change.action === "unchanged").length,
+      skipped: parsed.rows.length - rows.length, errors: issues.length,
+    },
   }
 }
 
@@ -183,7 +268,7 @@ export const importWholesaleCsv = async (container: MedusaContainer, csv: string
         category_ids: [categoryIds.get(first.category)!], metadata: wholesaleMetadata(first),
         images: images.map((url) => ({ url })), thumbnail: images[0],
         options: [{ title: "Color", values: Array.from(new Set(rows.map((row) => row.color))) }, { title: "Size", values: Array.from(new Set(rows.map((row) => row.size))) }],
-        variants: rows.map((row) => ({ title: `${row.color} / ${row.size}`, sku: row.sku, options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false, prices: [{ amount: 1, currency_code: "usd" }] })),
+        variants: rows.map((row) => ({ title: `${row.color} / ${row.size}`, sku: row.sku, options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false, prices: row.usd_price ? [{ amount: Number(row.usd_price), currency_code: "usd" }] : [] })),
       }
     }) } })
   }
@@ -205,7 +290,7 @@ export const importWholesaleCsv = async (container: MedusaContainer, csv: string
   if (rowsForNewVariants.length) {
     await createProductVariantsWorkflow(container).run({ input: { product_variants: rowsForNewVariants.map((row) => ({
       product_id: productByHandle.get(row.product_handle)!.id, title: `${row.color} / ${row.size}`, sku: row.sku,
-      options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false, prices: [{ amount: 1, currency_code: "usd" }],
+      options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false, prices: row.usd_price ? [{ amount: Number(row.usd_price), currency_code: "usd" }] : [],
     })) } })
   }
 
@@ -214,8 +299,10 @@ export const importWholesaleCsv = async (container: MedusaContainer, csv: string
     filters: { handle: { $in: Array.from(new Set(preview.rows.map((row) => row.product_handle))) } },
   }) as { data: ExistingProduct[] }
   const variantIdBySku = new Map(productsWithVariants.flatMap((product) => product.variants || []).map((variant) => [variant.sku, variant.id]))
+  const pricingBySku = await variantPricingBySku(container, preview.rows.map((row) => row.sku))
   await updateProductVariantsWorkflow(container).run({ input: { product_variants: preview.rows.map((row) => ({
     id: variantIdBySku.get(row.sku)!, title: `${row.color} / ${row.size}`, sku: row.sku, options: { Color: row.color, Size: row.size }, manage_inventory: true, allow_backorder: false,
+    ...(row.usd_price ? { prices: mergeUsdStandardPrice(pricingBySku.get(row.sku)?.price_set?.prices || [], Number(row.usd_price)) } : {}),
   })) } })
 
   const { data: salesChannels } = await query.graph({ entity: "sales_channel", fields: ["id"] })
@@ -242,11 +329,13 @@ export const exportWholesaleCsv = async (container: MedusaContainer, category?: 
   const inventoryItems = skus.length ? await inventoryService.listInventoryItems({ sku: skus }) : []
   const levels = inventoryItems.length ? await inventoryService.listInventoryLevels({ inventory_item_id: inventoryItems.map((item: any) => item.id) }) : []
   const quantityBySku = new Map<string, number>(inventoryItems.map((item: any) => [item.sku, levels.filter((level: any) => level.inventory_item_id === item.id).reduce((total: number, level: any) => total + Number(level.stocked_quantity || 0), 0)]))
+  const pricingBySku = await variantPricingBySku(container, skus)
   const rows: Array<Record<WholesaleCsvColumn, string | number | boolean | null | undefined>> = []
   for (const product of wholesaleProducts) {
     for (const variant of product.variants || []) {
+      const usdPrice = (pricingBySku.get(variant.sku)?.price_set?.prices || []).find(isBaseUsdPrice)
       rows.push({
-        product_handle: product.handle || "", product_title: product.title || "", description: product.description || "", category: product.metadata?.category || product.categories?.[0]?.handle || "", fabric: product.metadata?.fabric || "", pack_size: product.metadata?.pack_size ?? "", moq: product.metadata?.moq ?? "", stock_status: product.metadata?.stock_status || "", video_url: product.metadata?.video_url || "", product_test_marker: product.metadata?.seed_marker || "", color: optionValue(product, variant, "Color"), size: optionValue(product, variant, "Size"), sku: variant.sku || "", inventory_quantity: quantityBySku.get(variant.sku) || 0, image_urls: (product.images || []).map((image: any) => image.url).filter(Boolean).join("|"),
+        product_handle: product.handle || "", product_title: product.title || "", description: product.description || "", category: product.metadata?.category || product.categories?.[0]?.handle || "", fabric: product.metadata?.fabric || "", pack_size: product.metadata?.pack_size ?? "", moq: product.metadata?.moq ?? "", stock_status: product.metadata?.stock_status || "", video_url: product.metadata?.video_url || "", product_test_marker: product.metadata?.seed_marker || "", color: optionValue(product, variant, "Color"), size: optionValue(product, variant, "Size"), sku: variant.sku || "", inventory_quantity: quantityBySku.get(variant.sku) || 0, usd_price: usdPrice?.amount == null ? "" : amountAsNumber(usdPrice.amount), image_urls: (product.images || []).map((image: any) => image.url).filter(Boolean).join("|"),
       })
     }
   }

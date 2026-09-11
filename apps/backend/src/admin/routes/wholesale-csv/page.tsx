@@ -4,8 +4,9 @@ import { Badge, Button, Container, Heading, Select, Text, toast } from "@medusaj
 import { ChangeEvent, useMemo, useState } from "react"
 
 type Issue = { line: number; sku?: string; reason: string }
-type Summary = { new_products: number; updated_products: number; new_variants: number; updated_variants: number; skipped: number; errors: number }
-type Preview = { issues: Issue[]; summary: Summary }
+type PriceChange = { sku: string; action: "create" | "update" | "unchanged"; current_amount: number | null; usd_price: number; currency_code: "usd" }
+type Summary = { new_products: number; updated_products: number; new_variants: number; updated_variants: number; new_prices: number; updated_prices: number; unchanged_prices: number; skipped: number; errors: number }
+type Preview = { issues: Issue[]; price_changes?: PriceChange[]; summary: Summary }
 const categories = ["all", "jogger-pants", "cargo-pants", "casual-pants", "jeans", "t-shirts"]
 
 const WholesaleCsvPage = () => {
@@ -19,6 +20,8 @@ const WholesaleCsvPage = () => {
   const summaryRows = useMemo(() => preview ? [
     ["New products", preview.summary.new_products], ["Updated products", preview.summary.updated_products],
     ["New variants", preview.summary.new_variants], ["Updated variants", preview.summary.updated_variants],
+    ["New USD prices", preview.summary.new_prices], ["Updated USD prices", preview.summary.updated_prices],
+    ["Unchanged USD prices", preview.summary.unchanged_prices],
     ["Skipped rows", preview.summary.skipped], ["Errors", preview.summary.errors],
   ] : [], [preview])
 
@@ -67,13 +70,14 @@ const WholesaleCsvPage = () => {
       <div className="flex flex-wrap gap-3"><div className="w-56"><Select value={category} onValueChange={setCategory}><Select.Trigger><Select.Value /></Select.Trigger><Select.Content>{categories.map((value) => <Select.Item key={value} value={value}>{value === "all" ? "All wholesale categories" : value}</Select.Item>)}</Select.Content></Select></div><Button variant="secondary" onClick={exportCsv}>Export CSV</Button></div>
     </Container>
     <Container className="flex flex-col gap-y-4 p-5">
-      <div><Heading level="h2">Import CSV</Heading><Text className="text-ui-fg-subtle">Upload, review validation results, then explicitly confirm the import. Files are limited to 2 MB.</Text></div>
+      <div><Heading level="h2">Import CSV</Heading><Text className="text-ui-fg-subtle">Upload, review validation results, then explicitly confirm the import. Files are limited to 2 MB. USD prices use major units: enter 2.00 for $2.00.</Text></div>
       <input aria-label="Wholesale CSV file" type="file" accept=".csv,text/csv" onChange={(event) => void selectFile(event)} />
       {filename && <Text className="text-ui-fg-subtle">Selected: {filename}</Text>}
       <div className="flex gap-3"><Button variant="secondary" onClick={() => void previewCsv()} disabled={!csv} isLoading={loading}>Preview CSV</Button><Button onClick={() => void confirmImport()} disabled={!canImport} isLoading={loading}>Confirm Import</Button></div>
       {error && <Text className="text-ui-fg-error">{error}</Text>}
       {preview && <div className="flex flex-col gap-y-4"><div className="grid grid-cols-2 gap-3 small:grid-cols-3">{summaryRows.map(([label, count]) => <div key={String(label)} className="rounded-lg border border-ui-border-base p-3"><Text className="text-ui-fg-subtle">{label}</Text><Text className="text-lg font-semibold">{count}</Text></div>)}</div>
         {preview.issues.length > 0 ? <div><Heading level="h3">Validation errors</Heading><div className="mt-2 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="p-2">Line</th><th>SKU</th><th>Reason</th></tr></thead><tbody>{preview.issues.map((issue) => <tr key={`${issue.line}-${issue.reason}`} className="border-b"><td className="p-2">{issue.line}</td><td>{issue.sku || "-"}</td><td className="text-ui-fg-error">{issue.reason}</td></tr>)}</tbody></table></div></div> : <Badge color="green">Preview has no validation errors</Badge>}
+        {preview.price_changes && preview.price_changes.length > 0 && <div><Heading level="h3">USD standard price changes</Heading><div className="mt-2 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="p-2">SKU</th><th>Action</th><th>Current</th><th>After import</th></tr></thead><tbody>{preview.price_changes.map((change) => <tr key={change.sku} className="border-b"><td className="p-2">{change.sku}</td><td className="uppercase">{change.action}</td><td>{change.current_amount === null ? "-" : `$${change.current_amount.toFixed(2)}`}</td><td>${change.usd_price.toFixed(2)}</td></tr>)}</tbody></table></div></div>}
       </div>}
     </Container>
   </Container>

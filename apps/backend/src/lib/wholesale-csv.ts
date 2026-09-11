@@ -1,3 +1,4 @@
+import { MedusaError } from "@medusajs/framework/utils"
 import { WHOLESALE_CATEGORIES } from "./wholesale-categories"
 
 export { WHOLESALE_CATEGORIES } from "./wholesale-categories"
@@ -17,6 +18,7 @@ export const WHOLESALE_CSV_COLUMNS = [
   "size",
   "sku",
   "inventory_quantity",
+  "usd_price",
   "image_urls",
 ] as const
 
@@ -64,6 +66,7 @@ export const parseCsv = (input: string): string[][] => {
 
 const isFormula = (value: string) => /^[=+\-@]/.test(value.trim())
 const isNonNegativeInteger = (value: string) => /^\d+$/.test(value)
+const isUsdPrice = (value: string) => /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(value)
 
 export const parseAndValidateWholesaleCsv = (input: string): { rows: WholesaleCsvRow[]; issues: WholesaleCsvIssue[] } => {
   const issues: WholesaleCsvIssue[] = []
@@ -74,7 +77,7 @@ export const parseAndValidateWholesaleCsv = (input: string): { rows: WholesaleCs
   try { records = parseCsv(input) } catch (error) { return { rows: [], issues: [{ line: 1, reason: error instanceof Error ? error.message : "Unable to parse CSV." }] } }
   const [header = [], ...data] = records
   const normalizedHeader = header.map((value) => cleanBom(value).trim())
-  const missingColumns = WHOLESALE_CSV_COLUMNS.filter((column) => !normalizedHeader.includes(column))
+  const missingColumns = WHOLESALE_CSV_COLUMNS.filter((column) => column !== "usd_price" && !normalizedHeader.includes(column))
   if (missingColumns.length) return { rows: [], issues: [{ line: 1, reason: `Missing required columns: ${missingColumns.join(", ")}.` }] }
 
   const rows: WholesaleCsvRow[] = []
@@ -91,6 +94,7 @@ export const parseAndValidateWholesaleCsv = (input: string): { rows: WholesaleCs
     if (row.pack_size && !["5", "10"].includes(row.pack_size)) rowIssues.push("pack_size must be 5 or 10.")
     if (row.moq && !isNonNegativeInteger(row.moq)) rowIssues.push("moq must be a non-negative integer.")
     if (row.inventory_quantity && !isNonNegativeInteger(row.inventory_quantity)) rowIssues.push("inventory_quantity must be a non-negative integer.")
+    if (row.usd_price && !isUsdPrice(row.usd_price)) rowIssues.push("usd_price must be a non-negative USD amount with at most 2 decimal places, for example 2.00.")
     if (row.image_urls && row.image_urls.split("|").some((url) => !/^https?:\/\//.test(url) && !url.startsWith("/"))) rowIssues.push("image_urls must contain http(s) URLs or local paths separated by |.")
     if (row.sku && seenSkus.has(row.sku)) rowIssues.push("Duplicate SKU in CSV.")
     if (row.sku) seenSkus.add(row.sku)
@@ -111,16 +115,16 @@ export const serializeWholesaleCsv = (rows: Array<Record<WholesaleCsvColumn, str
 
 export const wholesaleCsvTemplate = () => serializeWholesaleCsv([
   {
-    product_handle: "example-classic-jogger-pants", product_title: "Example Classic Jogger Pants", description: "Example wholesale product. Replace before importing.", category: "jogger-pants", fabric: "Cotton blend fleece", pack_size: "10", moq: "50", stock_status: "in_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "Black", size: "M", sku: "EXAMPLE-JOGGER-BLK-M", inventory_quantity: "100", image_urls: "",
+    product_handle: "example-classic-jogger-pants", product_title: "Example Classic Jogger Pants", description: "Example wholesale product. Replace before importing.", category: "jogger-pants", fabric: "Cotton blend fleece", pack_size: "10", moq: "50", stock_status: "in_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "Black", size: "M", sku: "EXAMPLE-JOGGER-BLK-M", inventory_quantity: "100", usd_price: "2.00", image_urls: "",
   },
   {
-    product_handle: "example-classic-jogger-pants", product_title: "Example Classic Jogger Pants", description: "Example wholesale product. Replace before importing.", category: "jogger-pants", fabric: "Cotton blend fleece", pack_size: "10", moq: "50", stock_status: "in_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "Black", size: "L", sku: "EXAMPLE-JOGGER-BLK-L", inventory_quantity: "100", image_urls: "",
+    product_handle: "example-classic-jogger-pants", product_title: "Example Classic Jogger Pants", description: "Example wholesale product. Replace before importing.", category: "jogger-pants", fabric: "Cotton blend fleece", pack_size: "10", moq: "50", stock_status: "in_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "Black", size: "L", sku: "EXAMPLE-JOGGER-BLK-L", inventory_quantity: "100", usd_price: "2.00", image_urls: "",
   },
   {
-    product_handle: "example-basic-cotton-t-shirt", product_title: "Example Basic Cotton T-Shirt", description: "Example wholesale product. Replace before importing.", category: "t-shirts", fabric: "100% cotton jersey", pack_size: "5", moq: "30", stock_status: "low_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "White", size: "M", sku: "EXAMPLE-TSHIRT-WHT-M", inventory_quantity: "40", image_urls: "",
+    product_handle: "example-basic-cotton-t-shirt", product_title: "Example Basic Cotton T-Shirt", description: "Example wholesale product. Replace before importing.", category: "t-shirts", fabric: "100% cotton jersey", pack_size: "5", moq: "30", stock_status: "low_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "White", size: "M", sku: "EXAMPLE-TSHIRT-WHT-M", inventory_quantity: "40", usd_price: "", image_urls: "",
   },
   {
-    product_handle: "example-basic-cotton-t-shirt", product_title: "Example Basic Cotton T-Shirt", description: "Example wholesale product. Replace before importing.", category: "t-shirts", fabric: "100% cotton jersey", pack_size: "5", moq: "30", stock_status: "low_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "White", size: "L", sku: "EXAMPLE-TSHIRT-WHT-L", inventory_quantity: "40", image_urls: "",
+    product_handle: "example-basic-cotton-t-shirt", product_title: "Example Basic Cotton T-Shirt", description: "Example wholesale product. Replace before importing.", category: "t-shirts", fabric: "100% cotton jersey", pack_size: "5", moq: "30", stock_status: "low_stock", video_url: "", product_test_marker: "EXAMPLE_ONLY", color: "White", size: "L", sku: "EXAMPLE-TSHIRT-WHT-L", inventory_quantity: "40", usd_price: "", image_urls: "",
   },
 ])
 
@@ -129,4 +133,3 @@ export const validateWholesaleCsvUpload = (filename: unknown, csv: unknown) => {
   if (typeof csv !== "string") throw new MedusaError(MedusaError.Types.INVALID_DATA, "CSV content is required.")
   return csv
 }
-import { MedusaError } from "@medusajs/framework/utils"

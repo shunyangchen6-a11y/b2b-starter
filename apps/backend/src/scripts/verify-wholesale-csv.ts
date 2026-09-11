@@ -34,6 +34,7 @@ const row = (overrides: Partial<Record<WholesaleCsvColumn, string>> = {}) => ({
   size: "M",
   sku: "CSV-VERIFY-JOGGER-BLK-M",
   inventory_quantity: "24",
+  usd_price: "2.00",
   image_urls: "",
   ...overrides,
 })
@@ -122,6 +123,7 @@ export default async function verifyWholesaleCsv({ container }: { container: Med
       ["invalid stock status", serializeWholesaleCsv([row({ stock_status: "unknown" })])],
       ["invalid pack size", serializeWholesaleCsv([row({ pack_size: "6" })])],
       ["negative inventory", serializeWholesaleCsv([row({ inventory_quantity: "-1" })])],
+      ["invalid USD price", serializeWholesaleCsv([row({ usd_price: "2.001" })])],
       ["missing required field", serializeWholesaleCsv([row({ product_title: "" })])],
     ]
     invalidCases.forEach(([name, invalidCsv]) => assert(parseAndValidateWholesaleCsv(invalidCsv).issues.length > 0, `${name} was not rejected.`))
@@ -137,7 +139,7 @@ export default async function verifyWholesaleCsv({ container }: { container: Med
     console.log("- Exported 5 existing wholesale test products")
     console.log("- Previewed and imported 3 temporary products / 6 variants")
     console.log("- Re-import updated 3 products / 6 variants without duplicates")
-    console.log("- Rejected duplicate SKU, invalid category/status/pack, negative inventory, missing field, and non-CSV upload")
+    console.log("- Rejected duplicate SKU, invalid category/status/pack/price, negative inventory, missing field, and non-CSV upload")
   } catch (error) {
     console.log("WHOLESALE_CSV_VERIFICATION: FAIL")
     console.log(`- ${error instanceof Error ? error.message : "Unknown verification failure"}`)
